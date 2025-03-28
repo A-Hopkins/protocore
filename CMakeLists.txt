@@ -8,6 +8,7 @@ set(SOURCES
     src/message_queue.cpp
     src/task.cpp
     src/state_manager.cpp
+    src/memory_pool.cpp
 )
 
 add_library(protocore ${SOURCES})

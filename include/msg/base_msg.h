@@ -11,6 +11,7 @@
 
 #include <memory>
 #include <cstdint>
+#include <cstddef>
 
 namespace task
 {
@@ -141,7 +142,7 @@ namespace msg
      * @brief Gets the size of the data payload.
      * @return The size of the data type.
      */
-    size_t get_data_size() const { return sizeof(msg_data); }
+    std::size_t get_data_size() const { return sizeof(msg_data); }
 
     /**
      * @brief Gets a unique identifier for the message type.

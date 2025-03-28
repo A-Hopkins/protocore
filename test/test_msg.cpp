@@ -41,29 +41,29 @@ TEST(MsgPriorityTest, PriorityOrdering)
 // Test for StateMsg creation and data access
 TEST(StateMsgTest, ConstructorAndDataAccess)
 {
-    MockTask sender;
-    uint8_t state = 1;
-    StateMsg state_msg(&sender, state);
+  MockTask sender;
+  uint8_t state = 1;
+  StateMsg state_msg(&sender, state);
 
-    EXPECT_EQ(state_msg.get_type_id(), &StateMsg::type_id);
-    EXPECT_EQ(state_msg.get_priority(), 950);
-    EXPECT_EQ(state_msg.get_sender(), &sender);
-    EXPECT_EQ(*state_msg.get_data(), state);
+  EXPECT_EQ(state_msg.get_type_id(), &StateMsg::type_id);
+  EXPECT_EQ(state_msg.get_priority(), 950);
+  EXPECT_EQ(state_msg.get_sender(), &sender);
+  EXPECT_EQ(*state_msg.get_data(), state);
 }
 
 // Test for HeartbeatMsg creation and data access
 TEST(HeartbeatMsgTest, ConstructorAndDataAccess)
 {
-    MockTask sender;
-    uint32_t unique_id = 12345;
-    uint32_t timestamp = 67890;
-    HeartbeatMsg heartbeat_msg(&sender, unique_id, timestamp);
+  MockTask sender;
+  uint32_t unique_id = 12345;
+  uint32_t timestamp = 67890;
+  HeartbeatMsg heartbeat_msg(&sender, unique_id, timestamp);
 
-    EXPECT_EQ(heartbeat_msg.get_type_id(), &HeartbeatMsg::type_id);
-    EXPECT_EQ(heartbeat_msg.get_priority(), 900);
-    EXPECT_EQ(heartbeat_msg.get_sender(), &sender);
-    EXPECT_EQ(heartbeat_msg.get_unique_id(), unique_id);
-    EXPECT_EQ(heartbeat_msg.get_timestamp(), timestamp);
+  EXPECT_EQ(heartbeat_msg.get_type_id(), &HeartbeatMsg::type_id);
+  EXPECT_EQ(heartbeat_msg.get_priority(), 900);
+  EXPECT_EQ(heartbeat_msg.get_sender(), &sender);
+  EXPECT_EQ(heartbeat_msg.get_unique_id(), unique_id);
+  EXPECT_EQ(heartbeat_msg.get_timestamp(), timestamp);
 }
 
 // Test for HeartbeatAckMsg creation and data access
