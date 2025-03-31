@@ -2,172 +2,120 @@
  * @file msg.h
  * @brief Defines the Msg class
  *
- * This file provides the implementation of the `Msg` class, which is a wrapper for
- * managing message instances. It includes methods for creating, copying, and casting
- * messages of different types. The `Msg` class uses a unique pointer to manage the
- * lifetime of the underlying `BaseMsg` instance.
+ * This file provides the implementation of the `Msg` class, which is a generic
+ * message that has variant data in it.
  */
 #pragma once
-#include <utility>
+#include <cassert>
 
-#include "base_msg.h"
+#include "msg_varient_types.h"
+
+namespace task
+{
+  class Task; // Forward declaration
+}
 
 namespace msg
 {
   /**
    * @class Msg
-   * @brief A wrapper class for managing message instances.
+   * @brief Represents a message with a specific type and priority.
    *
-   * This class provides a unified interface for working with messages of different types.
-   * It uses a unique pointer to manage the lifetime of the underlying `BaseMsg` instance.
-   * Containers for messages should use this class to store and manage message instances.
-   * 
-   * A msg object is created on the heap using a unique pointer and to place it on a queue
-   * the copy constructors are used to create a deep copy of the message. The copy is what
-   * is added to the queues so that the original message can be cleaned up after the copy.
+   * This class is used to encapsulate messages that are sent between tasks.
+   * It provides methods to access the message data, sender, priority, and type.
    */
   class Msg
   {
   public:
-  
     /**
-     * @brief Creates a new message instance of a specific type.
-     * @tparam MsgT The message type to create.
-     * @tparam Args The argument types for the message constructor.
-     * @param args The arguments to pass to the message constructor.
-     * @return A new message instance.
-     *
-     * This static method simplifies the creation of messages by forwarding the provided
-     * arguments to the constructor of the specified message type.
+     * @brief Construct a new Msg
      * 
-     * @example Msg msg = Msg::create<StateMsg>(&sender, state);
+     * @param sender Pointer to the task that sent the message
+     * @param data The message data of type MessageVariant
      */
-    template <typename MsgT, typename... Args>
-    static Msg create(Args&&... args)
+    Msg(task::Task* sender, const MessageVariant& data) : sending_task(sender), msg_data(data)
     {
-      return Msg(std::make_unique<MsgT>(std::forward<Args>(args)...));
+      msg_priority = get_internal_priority();
+      msg_type = get_internal_type();
     }
 
     /**
-     * @brief Get the type identifier for this message
+     * @brief Checks if the stored data is of a specific type.
      * 
-     * @return const void* Pointer to the type identifier
+     * @tparam T The type to check against
+     * @return true if the stored data matches the specified type, false otherwise
      */
-    const void* get_type_id() const { return msg_ptr->get_type_id(); }
+    template <typename T>
+    bool has_data_type() const { return std::holds_alternative<T>(msg_data); }
 
     /**
-     * @brief Get the priority object
+     * @brief Retrieve the data of the message as a specific type.
+     * 
+     * @tparam T The expected type of the data of MessageVariant
+     * @return const T* A pointer to the data if it matches the type, nullptr otherwise
+     */
+    template <typename T>
+    const T* get_data_as() const { return std::get_if<T>(&msg_data); }
+
+    /**
+     * @brief Get the priority level of the message
      * 
      * @return Priority 
      */
-    uint16_t get_priority() const { return msg_ptr->get_priority(); }
+    Priority get_priority() const { return msg_priority; }
 
     /**
-     * @brief Get the sender object
+     * @brief Get the type of the message
      * 
-     * @return task::Task* 
+     * @return Type 
      */
-    task::Task* get_sender() const { return msg_ptr->get_sender(); }
+    Type get_type() const { return msg_type; }
 
     /**
-     * @brief A unique pointer to the underlying `BaseMsg` instance.
-     *
-     * This member variable manages the lifetime of the message object. It ensures that
-     * the memory for the message is automatically released when the `Msg` instance is
-     * destroyed. The `BaseMsg` pointer allows polymorphic behavior, enabling the `Msg`
-     * class to handle messages of different types.
+     * @brief Get the task that sent the message
+     * 
+     * @return Pointer to the sender task
      */
-    explicit Msg(std::unique_ptr<BaseMsg> ptr) : msg_ptr(std::move(ptr)) { }
+    task::Task* get_sender() const { return sending_task; }
 
     /**
-     * @brief Copy constructor.
-     * @param other The message to copy.
-     *
-     * Creates a new message that is a deep copy of the original.
+     * @brief Defines comparison for priority ordering
+     * 
+     * @param other The other message to compare against
+     * @return true if this message has a lower priority than the other
      */
-    Msg(const Msg& other) : msg_ptr(other.msg_ptr ? other.msg_ptr->clone() : nullptr) { }
-
-    /**
-     * @brief Copy assignment operator.
-     * @param other The message to copy.
-     * @return A reference to this message.
-     *
-     * Creates a deep copy of the original message.
-     */
-    Msg& operator=(const Msg& other)
-    {
-      if (this != &other) {
-        msg_ptr = other.msg_ptr ? other.msg_ptr->clone() : nullptr;
-      }
-      return *this;
-    }
-
-    /**
-     * @brief Move constructor.
-     * @param other The message to move from.
-     *
-     * Transfers ownership of the message pointer.
-     */
-    Msg(Msg&& other) noexcept = default;
-
-    /**
-     * @brief Move assignment operator.
-     * @param other The message to move from.
-     * @return A reference to this message.
-     *
-     * Transfers ownership of the message pointer.
-     */
-    Msg& operator=(Msg&& other) noexcept = default;
-
-    /**
-     * @brief Compares the priority of this message with another message.
-     * @param other The other message to compare with.
-     * @return True if this message has lower priority than the other.
-     */
-    bool operator<(const Msg &other) const
-    {
-      return msg_ptr->get_priority() < other.msg_ptr->get_priority(); 
-    }
-
-    /**
-     * @brief Casts the message to a specific type (const version).
-     * @tparam MsgT The message type to cast to.
-     * @return A pointer to the message of the specified type, or nullptr if the cast fails.
-     *
-     * This method attempts to cast the underlying message to the specified type. If the
-     * type of the message does not match the requested type, it returns `nullptr`.
-     * This is useful for safely accessing the data of a specific message type.
-     */
-    template <typename MsgT>
-    const MsgT* as() const
-    {
-      if (msg_ptr->get_type_id() == &MsgT::type_id)
-      {
-        return static_cast<const MsgT*>(msg_ptr.get());
-      }
-      return nullptr;
-    }
-
-    /**
-     * @brief Casts the message to a specific type (non-const version).
-     * @tparam MsgT The message type to cast to.
-     * @return A pointer to the message of the specified type, or nullptr if the cast fails.
-     *
-     * This method is similar to the const version but allows modification of the underlying
-     * message if the cast is successful. It is useful for scenarios where the message data
-     * needs to be updated or modified.
-     */
-    template <typename MsgT>
-    MsgT* as()
-    {
-      if (msg_ptr->get_type_id() == &MsgT::type_id)
-      {
-        return static_cast<MsgT*>(msg_ptr.get());
-      }
-      return nullptr;
-    }
+    bool operator<(const Msg& other) const { return msg_priority < other.msg_priority; }
 
   private:
-    std::unique_ptr<BaseMsg> msg_ptr;
+    task::Task* sending_task; ///< The task that sent the message
+    MessageVariant msg_data;  ///< The message data
+    Priority msg_priority;    ///< The priority of the message
+    Type msg_type;            ///< The type of the message
+
+    /**
+     * @brief Get the internal priority from the MessageVariant
+     * 
+     * @return Priority 
+     */
+    Priority get_internal_priority() const
+    {
+      // The index of the currently held alternative in the variant.
+      std::size_t index = msg_data.index();
+      // You might want to assert the index is valid relative to message_priorities
+      assert(index < (sizeof(message_priorities) / sizeof(message_priorities[0])));
+      return message_priorities[index];
+    }
+
+    /**
+     * @brief Get the internal type from the MessageVariant
+     * 
+     * @return Type 
+     */
+    Type get_internal_type() const
+    {
+      std::size_t index = msg_data.index();
+      assert(index < std::variant_size<MessageVariant>::value);
+      return static_cast<Type>(msg_data.index());
+    }
   };
 }

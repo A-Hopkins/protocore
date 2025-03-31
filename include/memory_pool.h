@@ -15,8 +15,10 @@
 
 /**
  * @brief The MemoryPool class is a memory pool allocator that allocates
- * memory blocks of a fixed size. The memory pool is created with a fixed
- * number of blocks that are all the same size. The memory pool is thread-safe.
+ * memory blocks of a fixed size. 
+ * 
+ * The memory pool is created with a fixed number of blocks that are all 
+ * the same size. The memory pool is thread-safe.
  */
 class MemoryPool
 {
