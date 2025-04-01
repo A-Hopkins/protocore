@@ -79,6 +79,13 @@ public:
    */
   bool is_empty() const;
 
+  /**
+   * @brief Returns the size of the node used by the queue.
+   *
+   * This function can be used by tasks to calculate the correct slot size.
+   */
+  static std::size_t node_size() { return sizeof(Node); }
+
 private:
   // Disable copying.
   MessageQueue(const MessageQueue&) = delete;
@@ -90,7 +97,7 @@ private:
   struct Node
   {
     msg::Msg message;
-    uint64_t sequence_number;
+    uint32_t sequence_number;
   };
 
   /**
@@ -120,5 +127,5 @@ private:
   std::vector<Node*> queue; ///< Vector of pointers to nodes in the queue.
   mutable std::mutex queue_mutex; ///< Mutex for thread safety.
   std::condition_variable queue_condition; ///< Condition variable for blocking dequeue.
-  uint64_t sequence = 0; ///< Sequence number for FIFO ordering of same-priority messages.
+  uint32_t sequence = 0; ///< Sequence number for FIFO ordering of same-priority messages.
 };

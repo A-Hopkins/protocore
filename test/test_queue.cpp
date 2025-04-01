@@ -10,35 +10,46 @@
 
 using namespace msg;
 
+// Constants for all tests
+const size_t MAX_MSGS = 100;
+
+// Minimal declaration for task::Task to satisfy Msg constructor requirements.
 namespace task
 {
   class Task
   {
   public:
-    virtual ~Task() = default;
+    Task(const std::string& name) : name(name) { }
+    const std::string& get_name() const { return name; }
+  protected:
+    std::string name;
   };
 }
 
-struct MockTask : public task::Task
+// Updated MockTask for testing, now including a message_queue member and proper constructors.
+class MockTask : public task::Task
 {
-  // Empty implementation
+public:
+  MessageQueue message_queue;
+  // default constructor used in tests without arguments
+  MockTask() : task::Task("default"), message_queue(MessageQueue::node_size(), MAX_MSGS) { }
+  // constructor with capacity
+  MockTask(const std::string& name, size_t capacity) : task::Task(name), message_queue(MessageQueue::node_size(), capacity) { }
 };
-
-// Constants for all tests
-const size_t MSG_SIZE = 64;
-const size_t MAX_MSGS = 100;
 
 // Test for initial queue state
 TEST(MessageQueueTest, InitiallyEmpty)
 {
-  MessageQueue queue(MSG_SIZE, MAX_MSGS);
+  MockTask task("Task", MAX_MSGS);
+  auto& queue = task.message_queue;
   EXPECT_TRUE(queue.is_empty());
 }
 
 // Test for basic queue operations
 TEST(MessageQueueTest, BasicEnqueueDequeue)
 {
-  MessageQueue queue(MSG_SIZE, MAX_MSGS);
+  MockTask task("Task", MAX_MSGS);
+  auto& queue = task.message_queue;
   
   MockTask sender;
   StateMsg state_msg{42};
@@ -54,10 +65,10 @@ TEST(MessageQueueTest, BasicEnqueueDequeue)
 }
 
 // Test for priority-based message ordering
-// (This test relies on msg::Msg::operator< to define priority and assumes correct ordering.)
 TEST(MessageQueueTest, PriorityMessageOrdering)
 {
-  MessageQueue queue(MSG_SIZE, MAX_MSGS);
+  MockTask task("Task", MAX_MSGS);
+  auto& queue = task.message_queue;
   MockTask sender;
   
   // Create messages with different priorities
@@ -87,7 +98,8 @@ TEST(MessageQueueTest, PriorityMessageOrdering)
 // Test for try_dequeue timeout behavior
 TEST(MessageQueueTest, DequeueTimeoutBehavior)
 {
-  MessageQueue queue(MSG_SIZE, MAX_MSGS);
+  MockTask task("Task", MAX_MSGS);
+  auto& queue = task.message_queue;
   MockTask sender;
   // Should fail with empty queue
   auto opt = queue.try_dequeue(std::chrono::milliseconds(10));
@@ -112,7 +124,8 @@ TEST(MessageQueueTest, DequeueTimeoutBehavior)
 // Test for queue capacity handling
 TEST(MessageQueueTest, MaxCapacityHandling)
 {
-  MessageQueue queue(MSG_SIZE, MAX_MSGS);
+  MockTask task("Task", MAX_MSGS);
+  auto& queue = task.message_queue;
   MockTask sender;
   
   // Fill the queue to capacity
@@ -139,7 +152,8 @@ TEST(MessageQueueTest, MaxCapacityHandling)
 // Test for thread safety with concurrent producers and consumers
 TEST(MessageQueueTest, ThreadSafeConcurrentAccess)
 {
-  MessageQueue queue(MSG_SIZE, MAX_MSGS);
+  MockTask task("Task", MAX_MSGS);
+  auto& queue = task.message_queue;
   
   const int NUM_PRODUCERS = 4;
   const int NUM_CONSUMERS = 4;
@@ -196,7 +210,8 @@ TEST(MessageQueueTest, ThreadSafeConcurrentAccess)
 // Test for blocking dequeue behavior
 TEST(MessageQueueTest, BlockingDequeueWaitsForMessage)
 {
-  MessageQueue queue(MSG_SIZE, MAX_MSGS);
+  MockTask task("Task", MAX_MSGS);
+  auto& queue = task.message_queue;
   MockTask sender;
   
   std::thread producer([&queue, &sender]()
@@ -222,7 +237,8 @@ TEST(MessageQueueTest, BlockingDequeueWaitsForMessage)
 // Test FIFO ordering for same-priority messages
 TEST(MessageQueueTest, SamePriorityFIFO)
 {
-  MessageQueue queue(MSG_SIZE, MAX_MSGS);
+  MockTask task("Task", MAX_MSGS);
+  auto& queue = task.message_queue;
   MockTask sender;
   
   // Create multiple messages with same priority but different values

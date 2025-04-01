@@ -7,7 +7,7 @@
 class MockTask : public task::Task
 {
 public:
-  MockTask(const std::string& name) : Task() { }
+  MockTask(const std::string& name) : Task(name) { }
   
   std::vector<msg::Msg> received_messages;
   
@@ -22,7 +22,14 @@ public:
     }
     return false;
   }
-  };
+  
+protected:
+  // Implement the required virtual method from Task class
+  void process_message(const msg::Msg& msg) override
+  {
+    received_messages.push_back(msg);
+  }
+};
 
 TEST(BrokerTest, Initialization)
 {

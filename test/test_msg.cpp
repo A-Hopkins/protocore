@@ -1,30 +1,34 @@
 #include <gtest/gtest.h>
 #include <queue>
-
 #include "msg/msg.h"
 #include "msg/system_msgs.h"
 
 using namespace msg;
 
+// Minimal declaration for task::Task to satisfy Msg constructor requirements.
 namespace task
 {
   class Task
   {
   public:
-    virtual ~Task() = default;
+    Task(const std::string& name) : name(name) { }
+    const std::string& get_name() const { return name; }
+  protected:
+    std::string name;
   };
 }
 
-// Mock Task class for testing - inherit from task::Task
-struct MockTask : public task::Task
+// Minimal MockTask for testing, inheriting from task::Task
+class MockTask : public task::Task
 {
-    // Provide any methods expected to be called on the Task in these tests
+public:
+  MockTask(const std::string& name) : task::Task(name) { }
 };
 
 // Test for Msg priority ordering
 TEST(MsgPriorityTest, PriorityOrdering)
 {
-  MockTask sender;
+  MockTask sender("Sender");
   StateMsg high_state_msg{ 1 };
   HeartbeatMsg low_heartbeat_msg{ 12345, 67890 };
   Msg high_priority_msg(&sender, high_state_msg);
@@ -43,7 +47,7 @@ TEST(MsgPriorityTest, PriorityOrdering)
 // Test for StateMsg creation and data access
 TEST(StateMsgTest, ConstructorAndDataAccess)
 {
-  MockTask sender;
+  MockTask sender("Sender");
   uint8_t state = 1;
   StateMsg state_msg{ state };
   Msg msg(&sender, state_msg);
@@ -59,7 +63,7 @@ TEST(StateMsgTest, ConstructorAndDataAccess)
 // Test for HeartbeatMsg creation and data access
 TEST(HeartbeatMsgTest, ConstructorAndDataAccess)
 {
-  MockTask sender;
+  MockTask sender("Sender");
   uint32_t unique_id = 12345;
   uint64_t timestamp = 67890;
   HeartbeatMsg heartbeat_msg{ unique_id, timestamp };
@@ -77,7 +81,7 @@ TEST(HeartbeatMsgTest, ConstructorAndDataAccess)
 // Test for HeartbeatAckMsg creation and data access
 TEST(HeartbeatAckMsgTest, AckMessage)
 {
-  MockTask sender;
+  MockTask sender("Sender");
   uint32_t unique_id = 54321;
   uint64_t timestamp = 98765;
   HeartbeatMsg heartbeat_msg{ unique_id, timestamp };
@@ -96,7 +100,7 @@ TEST(HeartbeatAckMsgTest, AckMessage)
 // Test for unique type identifiers (using get_type)
 TEST(MsgUniqueIdsTest, UniqueTypeIds)
 {
-  MockTask sender;
+  MockTask sender("Sender");
   StateMsg state_msg{ 1 };
   StateAckMsg state_ack_msg{ 2 };
   HeartbeatMsg heartbeat_msg{ 12345, 67890 };
@@ -118,7 +122,7 @@ TEST(MsgUniqueIdsTest, UniqueTypeIds)
 // Test for Msg wrapper create and cast (also verifies invalid casts)
 TEST(MsgTest, CreateAndCast)
 {
-  MockTask sender;
+  MockTask sender("Sender");
   uint8_t state = 2;
   StateMsg state_msg{ state };
   Msg msg(&sender, state_msg);
@@ -137,7 +141,7 @@ TEST(MsgTest, CreateAndCast)
 // New test to verify has_data_type functionality
 TEST(MsgTest, HasDataTypeTest)
 {
-  MockTask sender;
+  MockTask sender("Sender");
   uint8_t state = 3;
   StateMsg state_msg{ state };
   Msg msg(&sender, state_msg);
