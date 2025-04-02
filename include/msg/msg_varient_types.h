@@ -10,6 +10,8 @@
  * and then declare the message using the DECLARE_MESSAGE_TYPE macro.
  */
 #pragma once
+#include <cstdint>
+#include <string>
 #include <variant>
 
 #include "system_msgs.h"
@@ -19,8 +21,8 @@ namespace msg
   // List all message types and their priorities here.
   #ifndef MESSAGE_VARIANT_TYPES
   #define MESSAGE_VARIANT_TYPES(X)      \
-      X(StateMsg,                100),  \
-      X(StateAckMsg,              99),  \
+      X(StateMsg,                 100), \
+      X(StateAckMsg,               99), \
       X(HeartbeatMsg,              50), \
       X(HeartbeatAckMsg,           49)
   #endif
@@ -40,4 +42,19 @@ namespace msg
   using Priority = uint16_t;
   constexpr Priority message_priorities[] = { MESSAGE_VARIANT_TYPES(MSG_VARIANT_TYPE) };
   #undef MSG_VARIANT_TYPE
+
+  // Generate a compile-time array of type names
+  #define MSG_VARIANT_TYPE(TYPE, PRIORITY) #TYPE
+  inline constexpr const char* message_type_names[] = { MESSAGE_VARIANT_TYPES(MSG_VARIANT_TYPE) };
+  #undef MSG_VARIANT_TYPE
+
+  // Utility function to convert message types to a string.
+  inline std::string msg_type_to_string(Type type)
+  {
+    size_t index = static_cast<size_t>(type);
+    if (index < std::size(message_type_names)) {
+      return message_type_names[index];
+    }
+    return "Unknown";
+  }
 }
