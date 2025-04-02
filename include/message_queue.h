@@ -5,6 +5,7 @@
  */
 #pragma once
 
+#include <atomic>
 #include <cassert>
 #include <cstddef>
 #include <condition_variable>
@@ -53,11 +54,13 @@ public:
   /**
    * @brief Dequeue a message (blocking).
    *
-   * If the queue is empty, this call blocks until a message is available.
+   * If the queue is empty, this call blocks until a message is available. Or if a shutdown notify
+   * is received, it will return an empty optional.
    *
-   * @return msg::Msg A message from the queue.
+   * @return std::optional<msg::Msg> Contains the dequeued message if successful, empty otherwise
+   *  This will return an empty optional if a shutdown notify is received.
    */
-  msg::Msg dequeue();
+  std::optional<msg::Msg> dequeue();
 
   /**
    * @brief Attempt to dequeue a message within a given timeout.
@@ -85,6 +88,13 @@ public:
    * This function can be used by tasks to calculate the correct slot size.
    */
   static std::size_t node_size() { return sizeof(Node); }
+
+  /**
+   * @brief Notify the queue to shutdown.
+   *
+   * This will cause the dequeue() method to return an empty optional.
+   */
+  void notify_shutdown();
 
 private:
   // Disable copying.
@@ -127,5 +137,6 @@ private:
   std::vector<Node*> queue; ///< Vector of pointers to nodes in the queue.
   mutable std::mutex queue_mutex; ///< Mutex for thread safety.
   std::condition_variable queue_condition; ///< Condition variable for blocking dequeue.
+  std::atomic<bool> shutdown {false}; ///< Flag to indicate shutdown notify.
   uint32_t sequence = 0; ///< Sequence number for FIFO ordering of same-priority messages.
 };

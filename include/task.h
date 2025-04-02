@@ -7,12 +7,12 @@
  */
 
 #pragma once
+
 #include <atomic>
 #include <cstdint>
 #include <thread>
 #include <string>
 
-#include "msg/msg.h"
 #include "message_queue.h"
 
 namespace task
@@ -58,6 +58,14 @@ namespace task
   /**
    * @class Task
    * @brief A base class that represents a task with a state machine and message-based communication.
+   * 
+   * This class provides a framework for creating tasks that can run in their own threads,
+   * process messages from a message queue, and manage their own state transitions.
+   * Derived classes must implement the process_message() method to handle incoming messages.
+   * The task can be started and stopped, and it can also perform periodic tasks based on a specified interval.
+   * The task's state can be queried, and the task can be transitioned to different states.
+   * A task can perform periodic processing if the periodic_task_interval_ms is set to a non-zero value.
+   * The task will run two threads a timer for processing periodically and a thread for processing messages exclusively.
    */
   class Task
   {
@@ -69,7 +77,9 @@ namespace task
      * @param task_name The name of the task.
      * @param queue_msg_count The maximum number of messages in the queue. Default is 64.
      * 
-     * A task will run in its own thread and can process messages from the queue.
+     * A task will run in its own thread and can process messages from the queue. The queue is created
+     * with a size of message that is the node size used for the memory pool and some number of messages
+     * to be stored in the queue.
      * The task will be in the NOT_STARTED state until start() is called.
      * The task will be in the IDLE state when it is not processing messages. The process_message() method
      * must be implemented by derived classes to handle incoming messages, to enforce its own state machine.
@@ -107,16 +117,17 @@ namespace task
      * @return The name of the task
      */
     const std::string& get_name() const { return name; }
-
-  protected:
-    std::string name; ///< The name of the task.
-    TaskState current_state; ///< The current state of the task.
-
+    
     /**
      * @brief Gets the current state of the task.
      * @return The current state of the task.
      */
     TaskState get_current_state() const { return current_state; }
+
+  protected:
+    std::string name; ///< The name of the task.
+    TaskState current_state; ///< The current state of the task.
+
 
     /**
      * @brief Sets the periodic task interval.
@@ -127,9 +138,11 @@ namespace task
     /**
      * @brief Virtual function to be overridden by derived classes for periodic task processing.
      *
-     *        This function is called periodically based on the set interval.
+     * This function is called periodically based on the set interval and will not get called
+     * if the interval is set to 0. Derived classes should implement this function to define
+     * if they need periodic behavior of the task.
      */
-    virtual void periodic_task_process() {}
+    virtual void periodic_task_process() { }
 
     /**
      * @brief Virtual function to be overridden by derived classes for message processing.
@@ -165,17 +178,19 @@ namespace task
 
   private:
     std::atomic<bool> running; ///< Flag indicating if the task is running.
-    std::thread task_thread; ///< The thread in which the task runs.
+    std::thread queue_thread; ///< The thread in which the task runs and processes messages.
+    std::thread periodic_thread; ///< The thread for periodic task execution. Only starts if periodic_task_interval_ms is set.
     uint16_t periodic_task_interval_ms = 0; ///< The interval for periodic tasks in milliseconds.
 
     /**
-     * @brief The main execution loop for processing messages and handling periodic tasks.
+     * @brief The main execution loop for processing messages
      */
     void run();
 
+    /**
+     * @brief The execution loop for periodic tasks. Does not run if periodic_task_interval_ms is 0.
+     */
     void run_periodic();
 
-    void run_blocking();
-    
   };
 }

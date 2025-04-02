@@ -43,10 +43,17 @@ void MessageQueue::enqueue(const msg::Msg &msg)
   queue_condition.notify_one();
 }
 
-msg::Msg MessageQueue::dequeue()
+std::optional<msg::Msg> MessageQueue::dequeue()
 {
   std::unique_lock<std::mutex> lock(queue_mutex);
-  queue_condition.wait(lock, [this]() { return !queue.empty(); });
+  queue_condition.wait(lock, [this]() { return !queue.empty() || shutdown; });
+
+  if (shutdown && queue.empty())
+  {
+    sequence = 0;
+    return std::nullopt;
+  }
+
   // Reorder the heap and pop the top element.
   std::pop_heap(queue.begin(), queue.end(), NodeComparator());
   Node* node = queue.back();
@@ -68,7 +75,7 @@ msg::Msg MessageQueue::dequeue()
 std::optional<msg::Msg> MessageQueue::try_dequeue(std::chrono::milliseconds timeout)
 {
   std::unique_lock<std::mutex> lock(queue_mutex);
-  if (!queue_condition.wait_for(lock, timeout, [this]() { return !queue.empty(); }))
+  if (!queue_condition.wait_for(lock, timeout, [this]() { return !queue.empty() || shutdown; }))
   {
     return std::nullopt; // No message available
   }
@@ -88,4 +95,11 @@ bool MessageQueue::is_empty() const
 {
   std::lock_guard<std::mutex> lock(queue_mutex);
   return queue.empty();
+}
+
+void MessageQueue::notify_shutdown()
+{
+  std::lock_guard<std::mutex> lock(queue_mutex);
+  shutdown = true;
+  queue_condition.notify_all();
 }
