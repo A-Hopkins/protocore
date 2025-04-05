@@ -4,13 +4,10 @@
 #include "msg/msg.h"
 #include "state_manager.h"
 
-StateManager::StateManager() : task::Task("StateManager")
-{
-  Broker::subscribe(std::shared_ptr<StateManager>(this), msg::Type::StateAckMsg);
-}
 
-void StateManager::register_task(task::Task* task)
+void StateManager::register_task(const std::shared_ptr<task::Task>& task)
 {
+  std::lock_guard<std::mutex> lock(state_mutex);
   task_states[task] = task::TaskState::NOT_STARTED;
 }
 
@@ -19,7 +16,7 @@ void StateManager::request_state_transition(task::TaskState new_state)
   transition_to_state(new_state);
 }
 
-bool StateManager::demand_state_transition(task::TaskState new_state, std::chrono::seconds timeout)
+bool StateManager::demand_state_transition(task::TaskState new_state, std::chrono::milliseconds timeout)
 {
   std::cout << name << " demanding transition to " << task_state_to_string(new_state) << std::endl;
   {
@@ -105,21 +102,33 @@ void StateManager::process_message(const msg::Msg& msg)
 
 void StateManager::handle_acknowledgment(const msg::Msg& msg)
 {
-  auto sender_task = msg.get_sender();
-
-  if (task_states.find(sender_task) == task_states.end())
+  // Get the raw pointer of the sender from the message.
+  task::Task* sender_raw = msg.get_sender();
+  if (!sender_raw)
   {
     std::cerr << "Error: State ACK from unknown sender\n";
     return;
   }
+
+  // Look up the shared pointer corresponding to sender_raw.
+  std::shared_ptr<task::Task> sender;
+  for (const auto& pair : task_states)
+  {
+    if (pair.first.get() == sender_raw)
+    {
+      sender = pair.first;
+      break;
+    }
+  }
+  
+  if (!sender)
+  {
+    std::cerr << "Error: State ACK from unknown sender\n";
+    return;
+  }
+  
+  // Extract the acknowledgment message data.
   const auto* ack = msg.get_data_as<msg::StateAckMsg>();
-
-  if (!sender_task)
-  {
-    std::cerr << "Error: State ACK from unknown sender\n";
-    return;
-  }
-
   if (!ack)
   {
     std::cerr << "Error: Received StateAckMsg with no data\n";
@@ -127,8 +136,8 @@ void StateManager::handle_acknowledgment(const msg::Msg& msg)
   }
 
   task::TaskState acknowledged_state = static_cast<task::TaskState>(ack->state);
-  task_states[sender_task] = acknowledged_state;
-  std::cout << "Task " << sender_task->get_name() << " acknowledged transition to state " << task_state_to_string(acknowledged_state) << "\n";
+  task_states[sender] = acknowledged_state;
+  std::cout << "Task " << sender->get_name() << " acknowledged transition to state " << task_state_to_string(acknowledged_state) << "\n";
 
   bool all_in_target_state = true;
   for (const auto& pair : task_states)

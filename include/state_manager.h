@@ -10,13 +10,13 @@
 
 #pragma once
 
-#include <unordered_map>
+#include <map>
 #include <mutex>
 #include <condition_variable>
 
 #include "task.h"
 
-const std::chrono::seconds STATE_TRANSITION_TIMEOUT = std::chrono::seconds(5); ///< Default timeout for state transitions.
+const std::chrono::milliseconds STATE_TRANSITION_TIMEOUT = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::seconds(5)); ///< Default timeout for state transitions.
 
 /**
 * @class StateManager
@@ -36,16 +36,52 @@ const std::chrono::seconds STATE_TRANSITION_TIMEOUT = std::chrono::seconds(5); /
 class StateManager : public task::Task
 {
 public:
+  
   /**
-  * @brief Constructs a StateManager instance and initializes state handling.
-  */
-  StateManager();
+   * @brief Factory method for creating a StateManager instance.
+   *
+   * This function constructs and initializes a new StateManager object.
+   * It ensures that the instance is properly managed by a shared pointer and fully
+   * initialized via the on_initialize() hook. The StateManager's create method is an
+   * example of how derived classes should implement their own factory methods.
+   *
+   * @return std::shared_ptr<StateManager> A shared pointer to the newly created StateManager.
+   *
+   * @note Derived classes should follow a similar pattern:
+   * - Make the constructor protected.
+   * - Provide a public static create() method.
+   * - Call on_initialize() after the object is managed by a shared pointer.
+   *
+   * @code
+   * // Example for a derived task:
+   * class MyTask : public task::Task {
+   * public:
+   *     static std::shared_ptr<MyTask> create(const std::string &name) 
+   *     {
+   *         return std::shared_ptr<MyTask>(new MyTask(name));
+   *     }
+   * protected:
+   *     MyTask(const std::string &name) : task::Task(name) { }
+   *     void on_initialize() override
+   *     {
+   *         safe_subscribe(msg::Type::MyCustomMsg);
+   *     }
+   *     void process_message(const msg::Msg &msg) override { // Task-specific message processing... }
+   * };
+   * @endcode
+   */
+  static std::shared_ptr<StateManager> create()
+  {
+    auto instance = std::shared_ptr<StateManager>(new StateManager("StateManager"));
+    instance->on_initialize();
+    return instance;
+  }
 
   /**
   * @brief Registers a task with the state manager and sets its initial state to IDLE.
   * @param task Pointer to the task being registered.
   */
-  void register_task(task::Task* task);
+ void register_task(const std::shared_ptr<task::Task>& task);
 
   /**
   * @brief Requests a transition to a new state for all registered tasks.
@@ -60,7 +96,7 @@ public:
   * @param timeout The maximum time to wait for acknowledgment.
   * @return True if all tasks have transitioned to the new state, false otherwise.
   */
-  bool demand_state_transition(task::TaskState new_state, std::chrono::seconds timeout = STATE_TRANSITION_TIMEOUT);
+  bool demand_state_transition(task::TaskState new_state, std::chrono::milliseconds timeout = STATE_TRANSITION_TIMEOUT);
 
   /**
   * @brief Initializes the state manager and starts all registered tasks.
@@ -90,8 +126,30 @@ protected:
   */
   void process_message(const msg::Msg& msg);
 
+  /**
+   * @brief Constructor for the StateManager class.
+   *
+   * This constructor initializes the state manager with default values and sets
+   * the current state to NOT_STARTED. The constructor is protected to enforce the
+   * use of the create() factory method for instantiation.
+   */
+  StateManager(const std::string &name = "StateManager") : Task(name) { }
+
+  /**
+   * @brief Performs initialization tasks for the StateManager.
+   *
+   * This virtual function is called during the creation process (via Task::create) to perform any necessary
+   * initialization, such as subscribing to the appropriate message types. The default implementation subscribes
+   * the StateManager to the StateAckMsg message type. Derived classes may override this function to perform
+   * additional initialization tasks.
+   */
+  virtual void on_initialize() override
+  {
+    safe_subscribe(msg::Type::StateAckMsg);
+  }
+
 private:
-  std::unordered_map<task::Task*, task::TaskState> task_states; ///< Tracks the current state of each registered task.
+  std::map<std::shared_ptr<task::Task>, task::TaskState> task_states; ///< Tracks the current state of each registered task.
   std::mutex state_mutex; ///< Mutex for synchronizing state transitions.
   std::condition_variable shutdown_cv; ///< Condition variable used to coordinate shutdown.
   std::condition_variable state_transition_cv; ///< Condition variable used to coordinate state transitions.

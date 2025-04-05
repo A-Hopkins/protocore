@@ -1,9 +1,25 @@
 /**
  * @file task.h
- * @brief Defines the Task class, which serves as a base class for task execution and state management.
+ * @brief Defines the Task class used as a base for task execution and state management.
  *
- * The Task class provides a framework for managing tasks with different states (IDLE, RUNNING, STOPPED, ERROR).
- * It includes functionality for state transitions and thread management.
+ * @section Usage
+ * All tasks must be instantiated through a public static factory method implemented
+ * in the derived class. The Task constructor is protected to enforce proper initialization
+ * and to ensure that tasks are managed by shared pointers. Do not create a raw Task.
+ * Instead, each derived class must provide its own create() method, for example:
+ *
+ * @code
+ * class MyTask : public task::Task {
+ * public:
+ *     static std::shared_ptr<MyTask> create(const std::string &name) {
+ *         return std::shared_ptr<MyTask>(new MyTask(name));
+ *     }
+ * protected:
+ *     MyTask(const std::string &name) : Task(name) { }
+ *     void on_initialize() override { safe_subscribe(msg::Type::MyMsg); }
+ *     void process_message(const msg::Msg &msg) override {  }
+ * };
+ * @endcode
  */
 
 #pragma once
@@ -12,6 +28,9 @@
 #include <cstdint>
 #include <thread>
 #include <string>
+#include <memory>
+#include <type_traits>
+#include <utility>
 
 #include "message_queue.h"
 
@@ -57,39 +76,16 @@ namespace task
 
   /**
    * @class Task
-   * @brief A base class that represents a task with a state machine and message-based communication.
-   * 
-   * This class provides a framework for creating tasks that can run in their own threads,
-   * process messages from a message queue, and manage their own state transitions.
-   * Derived classes must implement the process_message() method to handle incoming messages.
-   * The task can be started and stopped, and it can also perform periodic tasks based on a specified interval.
-   * The task's state can be queried, and the task can be transitioned to different states.
-   * A task can perform periodic processing if the periodic_task_interval_ms is set to a non-zero value.
-   * The task will run two threads a timer for processing periodically and a thread for processing messages exclusively.
+   * @brief A base class representing a task with a state machine and message-based communication.
+   *
+   * This class enforces that tasks must be created via a static factory method in derived classes.
+   * The Task constructor is protected to prevent raw instantiation; every derived task must implement
+   * a public static create() method that calls the constructor and then calls on_initialize() to perform
+   * any necessary setup (such as subscriptions). This design guarantees that shared_from_this() is safe to use.
    */
-  class Task
+  class Task : public std::enable_shared_from_this<Task>
   {
   public:
-    MessageQueue message_queue; ///< The message queue for storing incoming messages.
-
-    /**
-     * @brief Constructor for the Task class.
-     * @param task_name The name of the task.
-     * @param queue_msg_count The maximum number of messages in the queue. Default is 64.
-     * 
-     * A task will run in its own thread and can process messages from the queue. The queue is created
-     * with a size of message that is the node size used for the memory pool and some number of messages
-     * to be stored in the queue.
-     * The task will be in the NOT_STARTED state until start() is called.
-     * The task will be in the IDLE state when it is not processing messages. The process_message() method
-     * must be implemented by derived classes to handle incoming messages, to enforce its own state machine.
-     */
-    Task(const std::string& task_name = "UnnamedTask", const std::size_t queue_msg_count = 64)
-      : name(task_name),
-        current_state(TaskState::NOT_STARTED),
-        running(false),
-        message_queue(MessageQueue::node_size(), queue_msg_count)
-    { }
 
     /**
      * @brief Virtual destructor to ensure proper cleanup in derived classes.
@@ -124,10 +120,55 @@ namespace task
      */
     TaskState get_current_state() const { return current_state; }
 
+    /**
+     * @brief Safely subscribes the task to a message type.
+     *
+     * This method wraps the Broker::subscribe call using the task's shared pointer.
+     *
+     * @param type The message type to subscribe to.
+     */
+    void safe_subscribe(msg::Type type);
+
+    /**
+     * @brief Safely publishes a message.
+     *
+     * This method wraps the Broker::publish call.
+     *
+     * @param msg The message to publish.
+     */
+    void safe_publish(const msg::Msg& msg);
+
+    /**
+     * @brief Delivers a message to this task.
+     *
+     * This method is used by the Broker to enqueue messages into the task's private message queue.
+     *
+     * @param msg The message to deliver.
+     */
+    void deliver_message(const msg::Msg& msg) { message_queue.enqueue(msg); }
+
   protected:
     std::string name; ///< The name of the task.
     TaskState current_state; ///< The current state of the task.
 
+    /**
+     * @brief Constructor for the Task class.
+     * @param task_name The name of the task.
+     * @param queue_msg_count The maximum number of messages in the queue. Default is 64.
+     * 
+     * A task will run in its own thread and can process messages from the queue. The queue is created
+     * with a size of message that is the node size used for the memory pool and some number of messages
+     * to be stored in the queue.
+     * The task will be in the NOT_STARTED state until start() is called.
+     * The task will be in the IDLE state when it is not processing messages. The process_message() method
+     * must be implemented by derived classes to handle incoming messages, to enforce its own state machine.
+     */
+    Task(const std::string& task_name = "UnnamedTask", const std::size_t queue_msg_count = 64)
+      : name(task_name),
+        current_state(TaskState::NOT_STARTED),
+        running(false),
+        message_queue(MessageQueue::node_size(), queue_msg_count)
+    { }
 
     /**
      * @brief Sets the periodic task interval.
@@ -161,6 +202,16 @@ namespace task
      */
     virtual void process_message(const msg::Msg& msg) = 0;
 
+
+    /**
+     * @brief Performs initialization tasks.
+     *
+     * This virtual function is called during the creation process (via Task::create) to perform any necessary
+     * initialization, such as subscribing to the appropriate message types. Derived classes must implement this
+     * function to perform any initialization tasks specific to the task.
+     */
+    virtual void on_initialize() = 0;
+
     /**
      * @brief Transitions the task to a new state.
      *
@@ -176,11 +227,18 @@ namespace task
      */
     virtual void transition_to_state(TaskState new_state);
 
+    /**
+     * @brief Gets the message queue for this task.
+     * @return A reference to the message queue.
+     */
+    MessageQueue& get_message_queue() { return message_queue; }
+
   private:
     std::atomic<bool> running; ///< Flag indicating if the task is running.
     std::thread queue_thread; ///< The thread in which the task runs and processes messages.
     std::thread periodic_thread; ///< The thread for periodic task execution. Only starts if periodic_task_interval_ms is set.
     uint16_t periodic_task_interval_ms = 0; ///< The interval for periodic tasks in milliseconds.
+    MessageQueue message_queue; ///< The message queue for storing incoming messages.
 
     /**
      * @brief The main execution loop for processing messages

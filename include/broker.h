@@ -17,8 +17,8 @@
 #include <cassert>
 #include <vector>
 
-#include "msg/msg.h"
 #include "task.h"
+#include "msg/msg.h"
  
 /**
 * @class Broker
@@ -73,7 +73,7 @@ public:
     {
       if (auto subscriber = it->lock())
       {
-        subscriber->message_queue.enqueue(msg);
+        subscriber->deliver_message(msg);
         ++it;
       }
       else

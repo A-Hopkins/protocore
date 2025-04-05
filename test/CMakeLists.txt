@@ -22,3 +22,8 @@ add_executable(test_task test_task.cpp)
 target_link_libraries(test_task PRIVATE protocore gtest gtest_main)
 
 add_test(NAME TestTask COMMAND test_task)
+
+add_executable(test_state_manager test_state_manager.cpp)
+target_link_libraries(test_state_manager PRIVATE protocore gtest gtest_main)
+
+add_test(NAME testStateManager COMMAND test_state_manager)

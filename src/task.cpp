@@ -2,10 +2,14 @@
  * @file task.cpp
  * @brief Implementtion of the Task class, which serves as a base class for task execution and state management.
  *
+ * This implementation enforces that tasks are managed by shared pointers (via std::enable_shared_from_this)
+ * and includes safe subscribe/publish functions with additional runtime checks.
  */
 #include <iostream>
 #include <chrono>
+#include <cassert>
 
+#include "broker.h"
 #include "task.h"
 
 namespace task
@@ -55,6 +59,7 @@ namespace task
   {
     current_state = new_state;
     std::cout << "Task " << name << " transitioned to state: " << task_state_to_string(current_state) << std::endl;
+    safe_publish(msg::Msg(this, msg::StateAckMsg{static_cast<uint8_t>(current_state)}));
   }
   
   void Task::run_periodic()
@@ -79,5 +84,19 @@ namespace task
       }
       
     }
+  }
+
+  void Task::safe_subscribe(msg::Type type)
+  {
+    std::shared_ptr<Task> self = shared_from_this();
+    assert(self && "Task must be created using Task::create() to use safe_subscribe.");
+    Broker::subscribe(self, type);
+  }
+  
+  void Task::safe_publish(const msg::Msg& msg)
+  {
+    std::shared_ptr<Task> self = shared_from_this();
+    assert(self && "Task must be created using Task::create() to use safe_publish.");
+    Broker::publish(msg);
   }
 }
