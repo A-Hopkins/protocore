@@ -9,6 +9,7 @@ set(SOURCES
     src/task.cpp
     src/state_manager.cpp
     src/memory_pool.cpp
+    src/heart_beat.cpp
 )
 
 add_library(protocore ${SOURCES})

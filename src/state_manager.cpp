@@ -1,14 +1,28 @@
+/**
+ * @file state_manager.cpp
+ * @brief This file includes the implementation of the StateManager class.
+ *
+ */
 #include <iostream>
 
 #include "broker.h"
 #include "msg/msg.h"
 #include "state_manager.h"
-
+#include "heart_beat.h"
 
 void StateManager::register_task(const std::shared_ptr<task::Task>& task)
 {
   std::lock_guard<std::mutex> lock(state_mutex);
   task_states[task] = task::TaskState::NOT_STARTED;
+
+  // Notify observer
+  if (task_registration_observer)
+  {
+    if (auto heart_beat = dynamic_cast<HeartBeatTask*>(task_registration_observer.get()))
+    {
+      heart_beat->notify_task_registered(task);
+    }
+  }
 }
 
 void StateManager::request_state_transition(task::TaskState new_state)
@@ -164,4 +178,20 @@ bool StateManager::all_tasks_in_state(task::TaskState state) const
     }
   }
   return true;
+}
+
+void StateManager::mark_task_as_unresponsive(std::shared_ptr<task::Task> task)
+{
+  std::cout << "StateManager: Task " << task->get_name() 
+            << " marked as unresponsive, setting to " 
+            << task_state_to_string(task::TaskState::ERROR) << std::endl;
+  
+  // Send state transition directly to the unresponsive task only
+  msg::StateMsg state_msg{static_cast<uint8_t>(task::TaskState::ERROR)};
+  msg::Msg msg(this, state_msg);
+  task->deliver_message(msg);
+  
+  // Update our internal state tracking (optional if you want to maintain state consistency)
+  std::lock_guard<std::mutex> lock(state_mutex);
+  task_states[task] = task::TaskState::ERROR;
 }

@@ -27,7 +27,7 @@ namespace task
       queue_thread = std::thread(&Task::run, this);
 
       // Start the periodic task thread if the interval is set.
-      if (periodic_task_interval_ms > 0)
+      if (periodic_task_interval_ms > std::chrono::milliseconds(0))
       {
         periodic_thread = std::thread(&Task::run_periodic, this);
       }
@@ -64,12 +64,15 @@ namespace task
   
   void Task::run_periodic()
   {
-    // Wait until the next periodic execution time.
-    auto next_time = std::chrono::steady_clock::now() + std::chrono::milliseconds(periodic_task_interval_ms);
-    std::this_thread::sleep_until(next_time);
+    while(running)
+    {
+      // Execute periodic processing.
+      periodic_task_process();
 
-    // Execute periodic processing.
-    periodic_task_process();
+      // Wait until the next periodic execution time.
+      auto next_time = std::chrono::steady_clock::now() + periodic_task_interval_ms;
+      std::this_thread::sleep_until(next_time);
+    }
   }
 
   void Task::run()

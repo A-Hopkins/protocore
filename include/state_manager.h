@@ -18,6 +18,8 @@
 
 const std::chrono::milliseconds STATE_TRANSITION_TIMEOUT = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::seconds(5)); ///< Default timeout for state transitions.
 
+class HeartBeatTask; ///< Forward declaration of HeartBeatTask class.
+
 /**
 * @class StateManager
 * @brief Manages state transitions and synchronization across multiple tasks.
@@ -82,6 +84,19 @@ public:
   * @param task Pointer to the task being registered.
   */
  void register_task(const std::shared_ptr<task::Task>& task);
+
+ /** 
+  * @brief Registers the task registration observer.
+  * @param observer Pointer to the Task that will observe task registrations
+  */
+ void set_task_registration_observer(std::shared_ptr<task::Task> observer) { task_registration_observer = observer; }
+
+ /**
+   * @brief Mark a specific task as unresponsive and handle it
+   * 
+   * @param task The unresponsive task
+   */
+  void mark_task_as_unresponsive(std::shared_ptr<task::Task> task);
 
   /**
   * @brief Requests a transition to a new state for all registered tasks.
@@ -155,6 +170,7 @@ private:
   std::condition_variable state_transition_cv; ///< Condition variable used to coordinate state transitions.
   task::TaskState current_state; ///< The current state of the state manager.
   task::TaskState target_state; ///< The target state for a state transition.
+  std::shared_ptr<task::Task> task_registration_observer; ///< Weak pointer to the HeartBeatTask that observes task registrations.
 
   /**
   * @brief Handles acknowledgment messages from tasks confirming state transitions.

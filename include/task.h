@@ -25,6 +25,7 @@
 #pragma once
 
 #include <atomic>
+#include <chrono>
 #include <cstdint>
 #include <thread>
 #include <string>
@@ -174,7 +175,7 @@ namespace task
      * @brief Sets the periodic task interval.
      * @param interval_ms The interval in milliseconds.
      */
-    void set_periodic_task_interval(unsigned int interval_ms) { periodic_task_interval_ms = interval_ms; }
+    void set_periodic_task_interval(std::chrono::milliseconds interval_ms) { periodic_task_interval_ms = interval_ms; }
 
     /**
      * @brief Virtual function to be overridden by derived classes for periodic task processing.
@@ -237,7 +238,7 @@ namespace task
     std::atomic<bool> running; ///< Flag indicating if the task is running.
     std::thread queue_thread; ///< The thread in which the task runs and processes messages.
     std::thread periodic_thread; ///< The thread for periodic task execution. Only starts if periodic_task_interval_ms is set.
-    uint16_t periodic_task_interval_ms = 0; ///< The interval for periodic tasks in milliseconds.
+    std::chrono::milliseconds periodic_task_interval_ms = std::chrono::milliseconds(0); ///< The interval for periodic tasks in milliseconds.
     MessageQueue message_queue; ///< The message queue for storing incoming messages.
 
     /**

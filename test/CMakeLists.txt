@@ -27,3 +27,8 @@ add_executable(test_state_manager test_state_manager.cpp)
 target_link_libraries(test_state_manager PRIVATE protocore gtest gtest_main)
 
 add_test(NAME testStateManager COMMAND test_state_manager)
+
+add_executable(test_heartbeat test_heartbeat.cpp)
+target_link_libraries(test_heartbeat PRIVATE protocore gtest gtest_main)
+
+add_test(NAME testHeartBeat COMMAND test_heartbeat)

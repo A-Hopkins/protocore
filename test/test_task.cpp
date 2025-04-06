@@ -36,7 +36,7 @@ public:
    * @param interval The periodic execution interval in milliseconds.
    * @return std::shared_ptr<MockTask> A shared pointer to the newly created MockTask.
    */
-  static std::shared_ptr<MockTask> create(const std::string& task_name, unsigned int interval = 0)
+  static std::shared_ptr<MockTask> create(const std::string& task_name, std::chrono::milliseconds interval = std::chrono::milliseconds(0))
   {
     auto instance = std::shared_ptr<MockTask>(new MockTask(task_name, interval));
     instance->on_initialize();
@@ -45,10 +45,10 @@ public:
 
 protected:
   // Protected constructor to enforce use of the factory method.
-  MockTask(const std::string& task_name, unsigned int interval = 0)
+  MockTask(const std::string& task_name, std::chrono::milliseconds interval = std::chrono::milliseconds(0))
     : Task(task_name)
   {
-    if(interval > 0)
+    if(interval > std::chrono::milliseconds(0))
     {
       set_periodic_task_interval(interval);
     }
@@ -86,7 +86,7 @@ TEST_F(TaskTestFixture, StartStop)
 
 TEST_F(TaskTestFixture, PeriodicExecution)
 {
-  auto task = MockTask::create("PeriodicTask", 5);
+  auto task = MockTask::create("PeriodicTask", std::chrono::milliseconds(5));
   task->start();
   // Wait long enough for periodic_task_process to be invoked.
   std::this_thread::sleep_for(std::chrono::milliseconds(20));
@@ -130,7 +130,7 @@ TEST_F(TaskTestFixture, MultipleStartStop)
 
 TEST_F(TaskTestFixture, NoPeriodicExecutionWithZeroInterval)
 {
-  auto task = MockTask::create("NoPeriodicTask", 0);
+  auto task = MockTask::create("NoPeriodicTask", std::chrono::milliseconds(0));
   task->start();
   std::this_thread::sleep_for(std::chrono::milliseconds(20));
   task->stop();

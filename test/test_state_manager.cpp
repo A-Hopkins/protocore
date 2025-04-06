@@ -335,3 +335,31 @@ TEST_F(StateManagerTest, ErrorStateHandling)
   
   sm->shutdown();
 }
+
+TEST_F(StateManagerTest, MarkTaskAsUnresponsive)
+{
+  auto task1 = MockTask::create("ResponsiveTask");
+  auto task2 = MockTask::create("UnresponsiveTask");
+  auto sm = StateManager::create();
+  
+  sm->register_task(task1);
+  sm->register_task(task2);
+  
+  sm->initialize();
+  sm->request_state_transition(task::TaskState::RUNNING);
+  std::this_thread::sleep_for(std::chrono::milliseconds(5));
+  
+  // Both tasks should be RUNNING initially
+  EXPECT_EQ(task1->get_current_state(), task::TaskState::RUNNING);
+  EXPECT_EQ(task2->get_current_state(), task::TaskState::RUNNING);
+  
+  // Mark only task2 as unresponsive
+  sm->mark_task_as_unresponsive(task2);
+  std::this_thread::sleep_for(std::chrono::milliseconds(5));
+  
+  // task1 should still be RUNNING, task2 should be ERROR
+  EXPECT_EQ(task1->get_current_state(), task::TaskState::RUNNING);
+  EXPECT_EQ(task2->get_current_state(), task::TaskState::ERROR);
+  
+  sm->shutdown();
+}
