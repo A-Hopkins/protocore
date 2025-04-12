@@ -102,4 +102,13 @@ namespace task
     assert(self && "Task must be created using Task::create() to use safe_publish.");
     Broker::publish(msg);
   }
+
+  void Task::handle_heartbeat(const msg::HeartbeatMsg* heartbeat_msg)
+  {
+    msg::HeartbeatAckMsg ack;
+    ack.orig_unique_id = heartbeat_msg->unique_id;
+    ack.orig_timestamp = heartbeat_msg->timestamp;
+    ack.ack_timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+    safe_publish(msg::Msg(this, ack));
+  }
 }

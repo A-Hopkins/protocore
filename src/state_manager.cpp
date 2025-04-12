@@ -97,7 +97,7 @@ void StateManager::transition_to_state(task::TaskState new_state)
   std::cout << name << " transitioning to " << task_state_to_string(new_state) << "\n";
 
   current_state = new_state;
-  safe_publish(msg::Msg(this, msg::StateMsg{static_cast<uint8_t>(new_state)}));                           
+  safe_publish(msg::Msg(this, msg::StateMsg{static_cast<uint8_t>(new_state)}));
 }
 
 void StateManager::process_message(const msg::Msg& msg)

@@ -229,6 +229,16 @@ namespace task
     virtual void transition_to_state(TaskState new_state);
 
     /**
+     * @brief Handles heartbeat messages.
+     *
+     * This method is called when a heartbeat message is received. Derived classes can
+     * override this method to implement custom behavior for handling heartbeat messages.
+     *
+     * @param heartbeat_msg The heartbeat message to handle.
+     */
+    virtual void handle_heartbeat(const msg::HeartbeatMsg* heartbeat_msg);
+
+    /**
      * @brief Gets the message queue for this task.
      * @return A reference to the message queue.
      */
