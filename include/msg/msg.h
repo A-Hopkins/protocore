@@ -8,7 +8,11 @@
 #pragma once
 #include <cassert>
 
+#ifdef USE_CUSTOM_MSG_VARIANT
 #include "msg_variant_types.h"
+#else
+#include "msg_variant_types_default.h"
+#endif
 
 namespace task
 {

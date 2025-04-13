@@ -1,6 +1,6 @@
 /**
- * @file msg_varient_types.h
- * @brief Defines the message variant types and associated priorities.
+ * @file msg_varient_types_default.h
+ * @brief Defines the default message variant types and associated priorities.
  * 
  * The list below is used to create:
  *   - A variant type (MessageVariant) that can hold any of the listed message types.
@@ -8,6 +8,8 @@
  *
  * To add a new message type, add a new line (with the type name and its priority)
  * and then declare the message using the DECLARE_MESSAGE_TYPE macro.
+ * 
+ * A system should create their own msg_variant_types.h file to be used with this as your base
  */
 #pragma once
 #include <cstdint>
