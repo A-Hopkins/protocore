@@ -245,11 +245,6 @@ void send_sensor_reading()
 }
 ```
 
-
-
-
-
-
 ## Building ProtoCore
 ### Prerequisites
 - C++ 17 compiler (GCC 11.4.0 or compatible).
@@ -284,3 +279,10 @@ ctest
 
 ## TODO
 - Logging
+  - Develop a logger to capture all internal messaging and print outputs.
+  - Design Requirements:
+    - **Reentrant and Thread-Safe**: Must safely handle concurrent logging calls from multiple threads.
+    - **Flexible Output**: Support both logging to a file and establishing a socket connection for data transmission.
+    - **Configurable Levels**: Include support for different log levels such as INFO, DEBUG, WARN, and ERROR.
+    - **Structured Logging**: Provide clear, structured output that can log task states, message content, and system events.
+    - **Performance**: Implement asynchronous logging to minimize performance impact.
