@@ -3,11 +3,10 @@
  * @brief This file includes the implementation of the StateManager class.
  *
  */
-#include <iostream>
-
-#include "msg/msg.h"
 #include "state_manager.h"
 #include "heart_beat.h"
+#include "msg/msg.h"
+#include <iostream>
 
 void StateManager::register_task(const std::shared_ptr<task::Task>& task)
 {
@@ -29,7 +28,8 @@ void StateManager::request_state_transition(task::TaskState new_state)
   transition_to_state(new_state);
 }
 
-bool StateManager::demand_state_transition(task::TaskState new_state, std::chrono::milliseconds timeout)
+bool StateManager::demand_state_transition(task::TaskState           new_state,
+                                           std::chrono::milliseconds timeout)
 {
   std::cout << name << " demanding transition to " << task_state_to_string(new_state) << std::endl;
   {
@@ -39,19 +39,20 @@ bool StateManager::demand_state_transition(task::TaskState new_state, std::chron
   transition_to_state(new_state);
 
   std::unique_lock<std::mutex> lock(state_mutex);
-  bool success = state_transition_cv.wait_for(lock, timeout, [this, new_state] {
-    return all_tasks_in_state(new_state);
-  });
+  bool                         success = state_transition_cv.wait_for(
+                              lock, timeout, [this, new_state] { return all_tasks_in_state(new_state); });
 
   if (!success)
   {
-    std::cerr << "Timeout waiting for tasks to state transition to " << task_state_to_string(new_state) << std::endl;
+    std::cerr << "Timeout waiting for tasks to state transition to "
+              << task_state_to_string(new_state) << std::endl;
 
     for (const auto& pair : task_states)
     {
       if (pair.second != new_state)
       {
-        std::cerr << "\tTask " << pair.first->get_name() << " still in state " << task_state_to_string(pair.second) << std::endl;
+        std::cerr << "\tTask " << pair.first->get_name() << " still in state "
+                  << task_state_to_string(pair.second) << std::endl;
       }
     }
   }
@@ -70,7 +71,8 @@ void StateManager::initialize()
   }
   if (!demand_state_transition(task::TaskState::IDLE))
   {
-    std::cerr << "Error: Timeout while waiting for tasks to transition to IDLE during initialization\n";
+    std::cerr
+        << "Error: Timeout while waiting for tasks to transition to IDLE during initialization\n";
   }
 }
 
@@ -90,7 +92,6 @@ void StateManager::shutdown()
 
   stop();
 }
-
 
 void StateManager::transition_to_state(task::TaskState new_state)
 {
@@ -132,13 +133,13 @@ void StateManager::handle_acknowledgment(const msg::Msg& msg)
       break;
     }
   }
-  
+
   if (!sender)
   {
     std::cerr << "Error: State ACK from unknown sender\n";
     return;
   }
-  
+
   // Extract the acknowledgment message data.
   const auto* ack = msg.get_data_as<msg::StateAckMsg>();
   if (!ack)
@@ -148,8 +149,9 @@ void StateManager::handle_acknowledgment(const msg::Msg& msg)
   }
 
   task::TaskState acknowledged_state = static_cast<task::TaskState>(ack->state);
-  task_states[sender] = acknowledged_state;
-  std::cout << "Task " << sender->get_name() << " acknowledged transition to state " << task_state_to_string(acknowledged_state) << "\n";
+  task_states[sender]                = acknowledged_state;
+  std::cout << "Task " << sender->get_name() << " acknowledged transition to state "
+            << task_state_to_string(acknowledged_state) << "\n";
 
   bool all_in_target_state = true;
   for (const auto& pair : task_states)
@@ -180,15 +182,14 @@ bool StateManager::all_tasks_in_state(task::TaskState state) const
 
 void StateManager::mark_task_as_unresponsive(std::shared_ptr<task::Task> task)
 {
-  std::cout << "StateManager: Task " << task->get_name() 
-            << " marked as unresponsive, setting to " 
+  std::cout << "StateManager: Task " << task->get_name() << " marked as unresponsive, setting to "
             << task_state_to_string(task::TaskState::ERROR) << std::endl;
-  
+
   // Send state transition directly to the unresponsive task only
   msg::StateMsg state_msg{static_cast<uint8_t>(task::TaskState::ERROR)};
-  msg::Msg msg(this, state_msg);
+  msg::Msg      msg(this, state_msg);
   task->deliver_message(msg);
-  
+
   // Update our internal state tracking (optional if you want to maintain state consistency)
   std::lock_guard<std::mutex> lock(state_mutex);
   task_states[task] = task::TaskState::ERROR;

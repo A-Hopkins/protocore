@@ -5,39 +5,40 @@
  */
 #pragma once
 
+#include "memory_pool.h"
+#include "msg/msg.h"
 #include <atomic>
 #include <cassert>
-#include <cstddef>
 #include <condition_variable>
+#include <cstddef>
 #include <mutex>
 #include <optional>
 #include <vector>
 
-#include "memory_pool.h"
-#include "msg/msg.h"
-
 /**
  * @brief Thread-safe IPC message queue.
- * 
+ *
  * This queue stores messages of type msg::Msg (which provides type erasure for message types).
  * Each MessageQueue uses its own MemoryPool for allocating nodes in which the messages are stored.
- * The queue is priority-based (using msg::Msg::operator<) so that higher priority messages are dequeued first.
- * Blocking dequeue, try_dequeue with timeout, and assertions for runtime safety are provided. * 
+ * The queue is priority-based (using msg::Msg::operator<) so that higher priority messages are
+ * dequeued first. Blocking dequeue, try_dequeue with timeout, and assertions for runtime safety are
+ * provided. *
  */
 class MessageQueue
 {
 public:
   /**
    * @brief Construct a new Message Queue object
-   * 
+   *
    * @param msg_size Size of each message in bytes, size in bytes for each memory block.
-   * @param max_msgs Maximum number of messages in the queue (The number of storage blocks to preallocate)
+   * @param max_msgs Maximum number of messages in the queue (The number of storage blocks to
+   * preallocate)
    */
   MessageQueue(std::size_t msg_size, std::size_t max_msgs);
 
   /**
    * @brief Destroy the Message Queue object
-   * 
+   *
    * Deallocates all messages in the queue and frees the memory pool.
    */
   ~MessageQueue();
@@ -45,11 +46,12 @@ public:
   /**
    * @brief Enqueue a message.
    *
-   * The message is deep-copied (by invoking msg::Msg's copy constructor) into a node allocated from the memory pool.
+   * The message is deep-copied (by invoking msg::Msg's copy constructor) into a node allocated from
+   * the memory pool.
    *
    * @param msg The message to enqueue.
    */
-  void enqueue(const msg::Msg &msg);
+  void enqueue(const msg::Msg& msg);
 
   /**
    * @brief Dequeue a message (blocking).
@@ -73,7 +75,8 @@ public:
    * @param timeout Maximum time to wait, default is 0 (non-blocking) (in milliseconds)
    * @return std::optional<msg::Msg> Contains the dequeued message if successful, empty otherwise
    */
-  std::optional<msg::Msg> try_dequeue(std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
+  std::optional<msg::Msg>
+  try_dequeue(std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
 
   /**
    * @brief Check whether the queue is empty.
@@ -98,7 +101,7 @@ public:
 
 private:
   // Disable copying.
-  MessageQueue(const MessageQueue&) = delete;
+  MessageQueue(const MessageQueue&)            = delete;
   MessageQueue& operator=(const MessageQueue&) = delete;
 
   /**
@@ -113,7 +116,8 @@ private:
   /**
    * @brief Comparator for priority ordering.
    *
-   * When using std::push_heap/std::pop_heap, this comparator determines the order based on msg::Msg::operator<.
+   * When using std::push_heap/std::pop_heap, this comparator determines the order based on
+   * msg::Msg::operator<.
    */
   struct NodeComparator
   {
@@ -123,7 +127,7 @@ private:
       {
         return true;
       }
-        
+
       if (b->message < a->message)
       {
         return false;
@@ -133,10 +137,10 @@ private:
     }
   };
 
-  MemoryPool pool; ///< Memory pool for allocating nodes.
-  std::vector<Node*> queue; ///< Vector of pointers to nodes in the queue.
-  mutable std::mutex queue_mutex; ///< Mutex for thread safety.
+  MemoryPool              pool;            ///< Memory pool for allocating nodes.
+  std::vector<Node*>      queue;           ///< Vector of pointers to nodes in the queue.
+  mutable std::mutex      queue_mutex;     ///< Mutex for thread safety.
   std::condition_variable queue_condition; ///< Condition variable for blocking dequeue.
-  std::atomic<bool> shutdown {false}; ///< Flag to indicate shutdown notify.
+  std::atomic<bool>       shutdown{false}; ///< Flag to indicate shutdown notify.
   uint32_t sequence = 0; ///< Sequence number for FIFO ordering of same-priority messages.
 };

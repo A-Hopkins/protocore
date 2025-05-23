@@ -6,9 +6,8 @@
  * throughout the system, such as state transitions and heartbeats.
  */
 #pragma once
-#include <cstdint>
-
 #include "declare_msg.h"
+#include <cstdint>
 
 namespace msg
 {
@@ -64,4 +63,4 @@ namespace msg
     uint64_t ack_timestamp;  ///< The timestamp of the acknowledgment message.
     // TODO: Identify need for any other fields
   };
-}
+} // namespace msg

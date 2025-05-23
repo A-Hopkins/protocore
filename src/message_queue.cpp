@@ -4,9 +4,8 @@
  *
  */
 
-#include <algorithm>
-
 #include "message_queue.h"
+#include <algorithm>
 
 MessageQueue::MessageQueue(std::size_t msg_size, std::size_t max_msgs) : pool(msg_size, max_msgs)
 {
@@ -26,7 +25,7 @@ MessageQueue::~MessageQueue()
   queue.clear();
 }
 
-void MessageQueue::enqueue(const msg::Msg &msg)
+void MessageQueue::enqueue(const msg::Msg& msg)
 {
   // Allocate memory for a Node from the memory pool.
   void* raw = pool.allocate();
@@ -35,7 +34,7 @@ void MessageQueue::enqueue(const msg::Msg &msg)
   // Construct a Node in the allocated memory using placement new.
   {
     std::lock_guard<std::mutex> lock(queue_mutex);
-    Node* node = new (raw) Node{ msg, sequence++ };
+    Node*                       node = new (raw) Node{msg, sequence++};
     // Insert the new node pointer into our fixed capacity container.
     queue.push_back(node);
     std::push_heap(queue.begin(), queue.end(), NodeComparator());
@@ -83,7 +82,7 @@ std::optional<msg::Msg> MessageQueue::try_dequeue(std::chrono::milliseconds time
   std::pop_heap(queue.begin(), queue.end(), NodeComparator());
   Node* node = queue.back();
   queue.pop_back();
-  
+
   msg::Msg result = node->message;
   node->~Node();
   pool.deallocate(node);

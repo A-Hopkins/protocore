@@ -16,9 +16,8 @@ MemoryPool::MemoryPool(std::size_t block_size, std::size_t block_count) : free_l
   assert(block_count > 0 && "block_count must be greater than 0");
   assert(block_size > sizeof(void*) && "block_size must be greater than a pointer size");
 
-  this->block_size = block_size;
+  this->block_size  = block_size;
   this->block_count = block_count;
-
 
   // Allocate the memory pool
   // The memory pool is a contiguous block of memory
@@ -33,9 +32,9 @@ MemoryPool::MemoryPool(std::size_t block_size, std::size_t block_count) : free_l
   std::byte* current_block = free_list;
   for (std::size_t i = 0; i < block_count - 1; ++i)
   {
-    std::byte* next = current_block + block_size;
+    std::byte* next                               = current_block + block_size;
     *reinterpret_cast<std::byte**>(current_block) = next;
-    current_block = next;
+    current_block                                 = next;
   }
 
   *reinterpret_cast<std::byte**>(current_block) = nullptr;
@@ -43,7 +42,7 @@ MemoryPool::MemoryPool(std::size_t block_size, std::size_t block_count) : free_l
 
 MemoryPool::~MemoryPool() = default;
 
-void *MemoryPool::allocate()
+void* MemoryPool::allocate()
 {
   std::lock_guard<std::mutex> lock(pool_mutex);
 
@@ -53,8 +52,7 @@ void *MemoryPool::allocate()
   }
 
   // Validate that the free_list pointer is within the pool area
-  assert(free_list >= pool_data.get() &&
-         free_list < pool_data.get() + block_size * block_count &&
+  assert(free_list >= pool_data.get() && free_list < pool_data.get() + block_size * block_count &&
          "free_list pointer is out of range");
 
   std::byte* allocated_block = free_list;
@@ -63,19 +61,18 @@ void *MemoryPool::allocate()
   return allocated_block;
 }
 
-void MemoryPool::deallocate(void *ptr)
+void MemoryPool::deallocate(void* ptr)
 {
   std::lock_guard<std::mutex> lock(pool_mutex);
-  std::byte* byte_ptr = reinterpret_cast<std::byte*>(ptr);
+  std::byte*                  byte_ptr = reinterpret_cast<std::byte*>(ptr);
 
   // Validate that the pointer is within the pool area.
-  assert(byte_ptr >= pool_data.get() &&
-         byte_ptr < pool_data.get() + block_size * block_count &&
+  assert(byte_ptr >= pool_data.get() && byte_ptr < pool_data.get() + block_size * block_count &&
          "Trying to deallocate a pointer not in the memory pool");
 
   // Add the memory block to the free list
   // The memory block is reinterpret_cast to void* to represent the pointer
   // This places the memory block at the front of the free list
   *reinterpret_cast<std::byte**>(byte_ptr) = free_list;
-  free_list = byte_ptr;
+  free_list                                = byte_ptr;
 }

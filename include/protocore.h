@@ -13,4 +13,4 @@ namespace protocore
   class Msg;
   class MessageQueue;
   class Broker;
-}
+} // namespace protocore

@@ -1,20 +1,17 @@
-#include <gtest/gtest.h>
-#include <chrono>
-#include <atomic>
-#include <thread>
-#include "task.h"
-#include "msg/system_msgs.h"  // include system messages for state messages
 #include "broker.h"
+#include "msg/system_msgs.h" // include system messages for state messages
+#include "task.h"
+#include <atomic>
+#include <chrono>
+#include <gtest/gtest.h>
+#include <thread>
 
 // Test fixture to initialize the Broker.
 class TaskTestFixture : public ::testing::Test
 {
 protected:
-  void SetUp() override
-  {
-    Broker::initialize();
-  }
-  
+  void SetUp() override { Broker::initialize(); }
+
   void TearDown() override
   {
     // Allow time for threads to settle between tests.
@@ -36,7 +33,9 @@ public:
    * @param interval The periodic execution interval in milliseconds.
    * @return std::shared_ptr<MockTask> A shared pointer to the newly created MockTask.
    */
-  static std::shared_ptr<MockTask> create(const std::string& task_name, std::chrono::milliseconds interval = std::chrono::milliseconds(0))
+  static std::shared_ptr<MockTask>
+  create(const std::string&        task_name,
+         std::chrono::milliseconds interval = std::chrono::milliseconds(0))
   {
     auto instance = std::shared_ptr<MockTask>(new MockTask(task_name, interval));
     instance->on_initialize();
@@ -45,18 +44,19 @@ public:
 
 protected:
   // Protected constructor to enforce use of the factory method.
-  MockTask(const std::string& task_name, std::chrono::milliseconds interval = std::chrono::milliseconds(0))
+  MockTask(const std::string&        task_name,
+           std::chrono::milliseconds interval = std::chrono::milliseconds(0))
     : Task(task_name)
   {
-    if(interval > std::chrono::milliseconds(0))
+    if (interval > std::chrono::milliseconds(0))
     {
       set_periodic_task_interval(interval);
     }
   }
-  
+
   // Implement on_initialize() so that MockTask is not abstract.
   void on_initialize() override { safe_subscribe(msg::Type::StateMsg); }
-  
+
   void process_message(const msg::Msg& m) override
   {
     // If the message contains a state message, transition accordingly.
@@ -66,11 +66,8 @@ protected:
     }
     ++msg_count;
   }
-  
-  void periodic_task_process() override
-  {
-    ++periodic_count;
-  }
+
+  void periodic_task_process() override { ++periodic_count; }
 };
 
 TEST_F(TaskTestFixture, StartStop)
@@ -100,8 +97,8 @@ TEST_F(TaskTestFixture, ProcessStateTransition)
   task->start();
 
   // Create a state message to transition to IDLE.
-  msg::StateMsg stateMsg{ static_cast<uint8_t>(task::TaskState::IDLE) };
-  msg::Msg message(task.get(), stateMsg);
+  msg::StateMsg stateMsg{static_cast<uint8_t>(task::TaskState::IDLE)};
+  msg::Msg      message(task.get(), stateMsg);
 
   // Use the public deliver_message() method.
   task->deliver_message(message);
@@ -143,7 +140,7 @@ TEST_F(TaskTestFixture, SafePublishTest)
   task->start();
 
   // Use safe_publish to send a state message.
-  msg::StateMsg stateMsg{ static_cast<uint8_t>(task::TaskState::RUNNING) };
+  msg::StateMsg stateMsg{static_cast<uint8_t>(task::TaskState::RUNNING)};
   task->safe_publish(msg::Msg(task.get(), stateMsg));
 
   // Allow time for the message to be processed.
@@ -163,7 +160,7 @@ TEST_F(TaskTestFixture, ShutdownPreventsFurtherProcessing)
   task->stop();
 
   // After shutdown, deliver a message.
-  msg::StateMsg stateMsg{ static_cast<uint8_t>(task::TaskState::RUNNING) };
+  msg::StateMsg stateMsg{static_cast<uint8_t>(task::TaskState::RUNNING)};
   task->deliver_message(msg::Msg(task.get(), stateMsg));
 
   // Allow time for the message (if any) to be processed.
@@ -179,8 +176,8 @@ TEST_F(TaskTestFixture, MultipleMessageProcessing)
   task->start();
 
   // Send a series of messages that change the state.
-  msg::StateMsg idleMsg{ static_cast<uint8_t>(task::TaskState::IDLE) };
-  msg::StateMsg runningMsg{ static_cast<uint8_t>(task::TaskState::RUNNING) };
+  msg::StateMsg idleMsg{static_cast<uint8_t>(task::TaskState::IDLE)};
+  msg::StateMsg runningMsg{static_cast<uint8_t>(task::TaskState::RUNNING)};
 
   task->deliver_message(msg::Msg(task.get(), idleMsg));
   task->deliver_message(msg::Msg(task.get(), runningMsg));
@@ -200,19 +197,21 @@ TEST_F(TaskTestFixture, ConcurrentEnqueueTest)
   auto task = MockTask::create("ConcurrentTask");
   task->start();
 
-  constexpr int numMessages = 10;
+  constexpr int            numMessages = 10;
   std::vector<std::thread> threads;
 
   // Launch multiple threads that concurrently publish messages.
   for (int i = 0; i < 10; i++)
   {
-    threads.emplace_back([task, numMessages]() {
-      for (int j = 0; j < numMessages; j++)
-      {
-        msg::StateMsg msgData{ static_cast<uint8_t>(task::TaskState::RUNNING) };
-        task->safe_publish(msg::Msg(task.get(), msgData));
-      }
-    });
+    threads.emplace_back(
+        [task, numMessages]()
+        {
+          for (int j = 0; j < numMessages; j++)
+          {
+            msg::StateMsg msgData{static_cast<uint8_t>(task::TaskState::RUNNING)};
+            task->safe_publish(msg::Msg(task.get(), msgData));
+          }
+        });
   }
 
   // Wait for all publisher threads to finish.

@@ -1,12 +1,11 @@
 /**
  * @file heart_beat.cpp
  * @brief This file includes the implementation of the HeartBeat class.
- * 
+ *
  */
-#include <iostream>
-
 #include "heart_beat.h"
 #include "state_manager.h"
+#include <iostream>
 
 void HeartBeatTask::notify_task_registered(std::shared_ptr<task::Task> task)
 {
@@ -20,7 +19,7 @@ void HeartBeatTask::notify_task_registered(std::shared_ptr<task::Task> task)
   {
     TaskStatus status;
     status.last_response_time = std::chrono::steady_clock::now();
-    monitored_tasks[task] = status;
+    monitored_tasks[task]     = status;
   }
 }
 
@@ -28,7 +27,7 @@ void HeartBeatTask::on_initialize()
 {
   safe_subscribe(msg::Type::StateMsg);
   safe_subscribe(msg::Type::HeartbeatAckMsg);
-  
+
   // Register with StateManager as an observer
   if (state_manager)
   {
@@ -36,7 +35,7 @@ void HeartBeatTask::on_initialize()
   }
 }
 
-void HeartBeatTask::process_message(const msg::Msg &msg)
+void HeartBeatTask::process_message(const msg::Msg& msg)
 {
   switch (msg.get_type())
   {
@@ -54,7 +53,8 @@ void HeartBeatTask::process_message(const msg::Msg &msg)
     }
 
     default:
-      std::cout << "Unhandled message type: " << msg::msg_type_to_string(msg.get_type()) << std::endl;
+      std::cout << "Unhandled message type: " << msg::msg_type_to_string(msg.get_type())
+                << std::endl;
       break;
   }
 }
@@ -78,20 +78,20 @@ uint32_t HeartBeatTask::generate_heartbeat_id()
 void HeartBeatTask::check_for_timeouts()
 {
   std::lock_guard<std::mutex> lock(tasks_mutex);
-  auto current_time = std::chrono::steady_clock::now();
+  auto                        current_time = std::chrono::steady_clock::now();
 
   for (auto& [task, status] : monitored_tasks)
   {
     if (status.awaiting_response)
     {
-      auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(current_time - status.last_heartbeat_time);
+      auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+          current_time - status.last_heartbeat_time);
 
       if (elapsed > response_timeout_ms)
       {
-        std::cout <<  "Task " << task->get_name()
-                  << " failed to respond to Heartbeat ID: "
-                  << status.last_heartbeat_id << " Taking action: "
-                  << task_state_to_string(unresponsive_action) << std::endl;
+        std::cout << "Task " << task->get_name()
+                  << " failed to respond to Heartbeat ID: " << status.last_heartbeat_id
+                  << " Taking action: " << task_state_to_string(unresponsive_action) << std::endl;
         handle_unresponsive_task(task);
         status.awaiting_response = false;
       }
@@ -107,13 +107,15 @@ void HeartBeatTask::send_heartbeat()
   {
     if (!status.awaiting_response)
     {
-      auto current_time = std::chrono::steady_clock::now();
+      auto     current_time = std::chrono::steady_clock::now();
       uint32_t heartbeat_id = generate_heartbeat_id();
-      uint64_t timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(current_time.time_since_epoch()).count();
+      uint64_t timestamp =
+          std::chrono::duration_cast<std::chrono::milliseconds>(current_time.time_since_epoch())
+              .count();
       msg::HeartbeatMsg heartbeat{heartbeat_id, timestamp};
-      msg::Msg heartbeat_msg(this, heartbeat);
-      status.awaiting_response = true;
-      status.last_heartbeat_id = heartbeat_id;
+      msg::Msg          heartbeat_msg(this, heartbeat);
+      status.awaiting_response   = true;
+      status.last_heartbeat_id   = heartbeat_id;
       status.last_heartbeat_time = current_time;
 
       // Note: Using direct delivery instead of safe_publish because:
@@ -125,10 +127,10 @@ void HeartBeatTask::send_heartbeat()
   }
 }
 
-void HeartBeatTask::handle_acknowledgment(const msg::Msg &msg)
+void HeartBeatTask::handle_acknowledgment(const msg::Msg& msg)
 {
-  auto ack = msg.get_data_as<msg::HeartbeatAckMsg>();
-  task::Task* sender_raw = msg.get_sender();
+  auto                        ack        = msg.get_data_as<msg::HeartbeatAckMsg>();
+  task::Task*                 sender_raw = msg.get_sender();
   std::lock_guard<std::mutex> lock(tasks_mutex);
 
   for (auto& [task, status] : monitored_tasks)
@@ -137,7 +139,7 @@ void HeartBeatTask::handle_acknowledgment(const msg::Msg &msg)
     {
       if (status.last_heartbeat_id == ack->orig_unique_id)
       {
-        status.awaiting_response = false;
+        status.awaiting_response  = false;
         status.last_response_time = std::chrono::steady_clock::now();
         std::cout << "Received Heartbeat ACK from " << task->get_name()
                   << " for Heartbeat ID: " << ack->orig_unique_id

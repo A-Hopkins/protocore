@@ -1,7 +1,7 @@
 /**
  * @file declare_msg.h
  * @brief This file provides a macro for declaring message types.
- * 
+ *
  * This macro should be used for declaring all message types.
  */
 
