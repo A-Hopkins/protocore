@@ -5,6 +5,7 @@
  */
 #include "heart_beat.h"
 #include "broker.h"
+#include "logger.h"
 #include "state_manager.h"
 #include <iostream>
 
@@ -54,9 +55,11 @@ void HeartBeatTask::process_message(const msg::Msg& msg)
     }
 
     default:
-      std::cout << "Unhandled message type: " << msg::msg_type_to_string(msg.get_type())
-                << std::endl;
+    {
+      Logger::instance().log(LogLevel::ERROR, this->get_name(),
+                             "Unhandled message type: " + msg::msg_type_to_string(msg.get_type()));
       break;
+    }
   }
 }
 
@@ -90,9 +93,10 @@ void HeartBeatTask::check_for_timeouts()
 
       if (elapsed > response_timeout_ms)
       {
-        std::cout << "Task " << task->get_name()
-                  << " failed to respond to Heartbeat ID: " << status.last_heartbeat_id
-                  << " Taking action: " << task_state_to_string(unresponsive_action) << std::endl;
+        Logger::instance().log(LogLevel::WARN, this->get_name(),
+                               "Task " + task->get_name() + " failed to respond to Heartbeat ID: " +
+                                   std::to_string(status.last_heartbeat_id) +
+                                   " Taking action: " + task_state_to_string(unresponsive_action));
         handle_unresponsive_task(task);
         status.awaiting_response = false;
       }
@@ -142,9 +146,10 @@ void HeartBeatTask::handle_acknowledgment(const msg::Msg& msg)
       {
         status.awaiting_response  = false;
         status.last_response_time = std::chrono::steady_clock::now();
-        std::cout << "Received Heartbeat ACK from " << task->get_name()
-                  << " for Heartbeat ID: " << ack->orig_unique_id
-                  << " at time: " << ack->ack_timestamp << std::endl;
+        Logger::instance().log(LogLevel::INFO, this->get_name(),
+                               "Received Heartbeat ACK from " + task->get_name() +
+                                   " for Heartbeat ID: " + std::to_string(ack->orig_unique_id) +
+                                   " at time: " + std::to_string(ack->ack_timestamp));
       }
       break;
     }

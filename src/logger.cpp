@@ -69,6 +69,17 @@ void FileSink::log(const std::string& formatted)
   ofs.flush();
 }
 
+ConsoleSink::ConsoleSink(std::ostream& out) : std_out(out) {}
+
+ConsoleSink::~ConsoleSink() = default;
+
+void ConsoleSink::log(const std::string& formatted)
+{
+  std::lock_guard<std::mutex> lock(std_out_mutex);
+  std_out << formatted << '\n';
+  std_out.flush();
+}
+
 // SocketSink is left unimplemented for now
 SocketSink::SocketSink(const std::string& host, uint16_t port) : sockfd(-1), connected(false)
 {

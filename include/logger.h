@@ -9,6 +9,7 @@
 #include <deque>
 #include <fstream>
 #include <functional>
+#include <iostream>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -76,6 +77,22 @@ private:
   std::mutex    ofs_mutex; ///< Guards access to the file stream
 };
 
+/**
+ * @class ConsoleSink
+ * @brief Writes log entries to stdout
+ */
+class ConsoleSink : public ILogSink
+{
+public:
+  explicit ConsoleSink(std::ostream& out = std::cout);
+  ~ConsoleSink() override;
+  void log(const std::string& formatted) override;
+
+private:
+  std::ostream& std_out;
+  std::mutex    std_out_mutex;
+};
+
 // TODO: Implement socket writes
 /**
  * @class SocketSink
@@ -111,10 +128,10 @@ private:
  * @brief Central asynchronous logger with multiple sinks.
  *
  * Usage:
- *   protocore::Logger::instance()
+ *   Logger::instance()
  *     .setLevel(LogLevel::INFO)
  *     .addSink(std::make_unique<FileSink>("app.log"));
- *   protocore::Logger::instance().log(LogLevel::DEBUG, "MyComp", "Hello");
+ *   Logger::instance().log(LogLevel::DEBUG, "MyComp", "Hello");
  */
 class Logger
 {

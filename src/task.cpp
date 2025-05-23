@@ -59,8 +59,8 @@ namespace task
   void Task::transition_to_state(TaskState new_state)
   {
     current_state = new_state;
-    std::cout << "Task " << name
-              << " transitioned to state: " << task_state_to_string(current_state) << std::endl;
+    Logger::instance().log(LogLevel::INFO, this->get_name(),
+                           "transitioning to " + task_state_to_string(new_state));
     safe_publish(msg::Msg(this, msg::StateAckMsg{static_cast<uint8_t>(current_state)}));
   }
 

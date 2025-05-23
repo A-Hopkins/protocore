@@ -145,9 +145,12 @@ namespace task
      */
     struct MessageQueueAccessor
     {
-      private:
+    private:
       friend class ::Broker;
-      static MessageQueue& get(const std::shared_ptr<Task>& task_ptr) { return task_ptr->message_queue; }
+      static MessageQueue& get(const std::shared_ptr<Task>& task_ptr)
+      {
+        return task_ptr->message_queue;
+      }
       static MessageQueue& get(Task& task) { return task.message_queue; }
     };
 
@@ -256,8 +259,8 @@ namespace task
                                        ///< periodic_task_interval_ms is set.
     std::chrono::milliseconds periodic_task_interval_ms =
         std::chrono::milliseconds(0); ///< The interval for periodic tasks in milliseconds.
-    MessageQueue message_queue; ///< Only accessible to Broker for message delivery (see
-                                ///< Broker::deliver_message)
+    MessageQueue message_queue;       ///< Only accessible to Broker for message delivery (see
+                                      ///< Broker::deliver_message)
 
     /**
      * @brief The main execution loop for processing messages

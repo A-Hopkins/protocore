@@ -6,6 +6,7 @@
 #include "state_manager.h"
 #include "broker.h"
 #include "heart_beat.h"
+#include "logger.h"
 #include "msg/msg.h"
 #include <iostream>
 
@@ -32,7 +33,8 @@ void StateManager::request_state_transition(task::TaskState new_state)
 bool StateManager::demand_state_transition(task::TaskState           new_state,
                                            std::chrono::milliseconds timeout)
 {
-  std::cout << name << " demanding transition to " << task_state_to_string(new_state) << std::endl;
+  Logger::instance().log(LogLevel::INFO, this->get_name(),
+                         "demanding transition to " + task_state_to_string(new_state));
   {
     std::lock_guard<std::mutex> lock(state_mutex);
     target_state = new_state;
@@ -45,15 +47,17 @@ bool StateManager::demand_state_transition(task::TaskState           new_state,
 
   if (!success)
   {
-    std::cerr << "Timeout waiting for tasks to state transition to "
-              << task_state_to_string(new_state) << std::endl;
+    Logger::instance().log(LogLevel::ERROR, this->get_name(),
+                           "Timeout waiting for tasks to state transition to " +
+                               task_state_to_string(new_state));
 
     for (const auto& pair : task_states)
     {
       if (pair.second != new_state)
       {
-        std::cerr << "\tTask " << pair.first->get_name() << " still in state "
-                  << task_state_to_string(pair.second) << std::endl;
+        Logger::instance().log(LogLevel::ERROR, this->get_name(),
+                               "\tTask " + pair.first->get_name() + " still in state " +
+                                   task_state_to_string(pair.second));
       }
     }
   }
@@ -63,7 +67,7 @@ bool StateManager::demand_state_transition(task::TaskState           new_state,
 
 void StateManager::initialize()
 {
-  std::cout << name << " initializing tasks...\n";
+  Logger::instance().log(LogLevel::INFO, this->get_name(), "initializing tasks...");
   start();
 
   for (const auto& pair : task_states)
@@ -72,18 +76,20 @@ void StateManager::initialize()
   }
   if (!demand_state_transition(task::TaskState::IDLE))
   {
-    std::cerr
-        << "Error: Timeout while waiting for tasks to transition to IDLE during initialization\n";
+    Logger::instance().log(
+        LogLevel::ERROR, this->get_name(),
+        "Timeout while waiting for tasks to transition to IDLE during initialization");
   }
 }
 
 void StateManager::shutdown()
 {
-  std::cout << name << " shutting down tasks...\n";
+  Logger::instance().log(LogLevel::INFO, this->get_name(), "shutting down tasks...");
 
   if (!demand_state_transition(task::TaskState::STOPPED))
   {
-    std::cerr << "Error: Timeout while waiting for tasks to stop during shutdown\n";
+    Logger::instance().log(LogLevel::ERROR, this->get_name(),
+                           "Timeout while waiting for tasks to stop during shutdown");
   }
 
   for (const auto& pair : task_states)
@@ -96,7 +102,8 @@ void StateManager::shutdown()
 
 void StateManager::transition_to_state(task::TaskState new_state)
 {
-  std::cout << name << " transitioning to " << task_state_to_string(new_state) << "\n";
+  Logger::instance().log(LogLevel::INFO, this->get_name(),
+                         "transitioning to " + task_state_to_string(new_state));
 
   current_state = new_state;
   safe_publish(msg::Msg(this, msg::StateMsg{static_cast<uint8_t>(new_state)}));
@@ -110,7 +117,8 @@ void StateManager::process_message(const msg::Msg& msg)
   }
   else
   {
-    std::cout << "Unhandled message type: " << msg::msg_type_to_string(msg.get_type()) << std::endl;
+    Logger::instance().log(LogLevel::ERROR, this->get_name(),
+                           "Unhandled message type: " + msg::msg_type_to_string(msg.get_type()));
   }
 }
 
@@ -120,7 +128,7 @@ void StateManager::handle_acknowledgment(const msg::Msg& msg)
   task::Task* sender_raw = msg.get_sender();
   if (!sender_raw)
   {
-    std::cerr << "Error: State ACK from unknown sender\n";
+    Logger::instance().log(LogLevel::ERROR, this->get_name(), "State ACK from unknown sender");
     return;
   }
 
@@ -137,7 +145,7 @@ void StateManager::handle_acknowledgment(const msg::Msg& msg)
 
   if (!sender)
   {
-    std::cerr << "Error: State ACK from unknown sender\n";
+    Logger::instance().log(LogLevel::ERROR, this->get_name(), "State ACK from unknown sender");
     return;
   }
 
@@ -145,14 +153,16 @@ void StateManager::handle_acknowledgment(const msg::Msg& msg)
   const auto* ack = msg.get_data_as<msg::StateAckMsg>();
   if (!ack)
   {
-    std::cerr << "Error: Received StateAckMsg with no data\n";
+    Logger::instance().log(LogLevel::ERROR, this->get_name(), "Received StateAckMsg with no data");
     return;
   }
 
   task::TaskState acknowledged_state = static_cast<task::TaskState>(ack->state);
   task_states[sender]                = acknowledged_state;
-  std::cout << "Task " << sender->get_name() << " acknowledged transition to state "
-            << task_state_to_string(acknowledged_state) << "\n";
+
+  Logger::instance().log(LogLevel::INFO, this->get_name(),
+                         "Task " + sender->get_name() + " acknowledged transition to state " +
+                             task_state_to_string(acknowledged_state));
 
   bool all_in_target_state = true;
   for (const auto& pair : task_states)
@@ -183,9 +193,9 @@ bool StateManager::all_tasks_in_state(task::TaskState state) const
 
 void StateManager::mark_task_as_unresponsive(std::shared_ptr<task::Task> task)
 {
-  std::cout << "StateManager: Task " << task->get_name() << " marked as unresponsive, setting to "
-            << task_state_to_string(task::TaskState::ERROR) << std::endl;
-
+  Logger::instance().log(LogLevel::ERROR, this->get_name(),
+                         "Task " + task->get_name() + " marked as unresponsive, setting to " +
+                             task_state_to_string(task::TaskState::ERROR));
   // Send state transition directly to the unresponsive task only
   msg::StateMsg state_msg{static_cast<uint8_t>(task::TaskState::ERROR)};
   msg::Msg      msg(this, state_msg);
