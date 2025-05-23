@@ -35,7 +35,9 @@ file(GLOB_RECURSE ALL_SOURCE_FILES
   "${CMAKE_CURRENT_SOURCE_DIR}/test/*.cpp"
   )
 
-add_custom_target(
-  clang_format
-  COMMAND clang-format -i ${ALL_SOURCE_FILES}
-)
+if(BUILD_TESTING)
+  add_custom_target(
+    clang_format
+    COMMAND clang-format -i ${ALL_SOURCE_FILES}
+  )
+endif()
