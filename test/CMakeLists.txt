@@ -32,3 +32,8 @@ add_executable(test_heartbeat test_heartbeat.cpp)
 target_link_libraries(test_heartbeat PRIVATE protocore gtest gtest_main)
 
 add_test(NAME testHeartBeat COMMAND test_heartbeat)
+
+add_executable(test_logger test_logger.cpp)
+target_link_libraries(test_logger PRIVATE protocore gtest gtest_main)
+
+add_test(NAME testLogger COMMAND test_logger)
