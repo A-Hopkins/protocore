@@ -34,6 +34,8 @@
 #include <type_traits>
 #include <utility>
 
+class Broker; // Forward declare in global scope
+
 namespace task
 {
   /**
@@ -139,13 +141,15 @@ namespace task
     void safe_publish(const msg::Msg& msg);
 
     /**
-     * @brief Delivers a message to this task.
-     *
-     * This method is used by the Broker to enqueue messages into the task's private message queue.
-     *
-     * @param msg The message to deliver.
+     * @brief Accessor to allow only Broker to enqueue into message_queue.
      */
-    void deliver_message(const msg::Msg& msg) { message_queue.enqueue(msg); }
+    struct MessageQueueAccessor
+    {
+      private:
+      friend class ::Broker;
+      static MessageQueue& get(const std::shared_ptr<Task>& task_ptr) { return task_ptr->message_queue; }
+      static MessageQueue& get(Task& task) { return task.message_queue; }
+    };
 
   protected:
     std::string name;          ///< The name of the task.
@@ -252,7 +256,8 @@ namespace task
                                        ///< periodic_task_interval_ms is set.
     std::chrono::milliseconds periodic_task_interval_ms =
         std::chrono::milliseconds(0); ///< The interval for periodic tasks in milliseconds.
-    MessageQueue message_queue;       ///< The message queue for storing incoming messages.
+    MessageQueue message_queue; ///< Only accessible to Broker for message delivery (see
+                                ///< Broker::deliver_message)
 
     /**
      * @brief The main execution loop for processing messages

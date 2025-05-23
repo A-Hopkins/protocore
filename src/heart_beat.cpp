@@ -4,6 +4,7 @@
  *
  */
 #include "heart_beat.h"
+#include "broker.h"
 #include "state_manager.h"
 #include <iostream>
 
@@ -122,7 +123,7 @@ void HeartBeatTask::send_heartbeat()
       // 1. Heartbeats are targeted to specific tasks
       // 2. We need to track which specific task gets each heartbeat ID
       // 3. The monitoring relationship is 1:1 between HeartBeatTask and each monitored task
-      task->deliver_message(heartbeat_msg);
+      Broker::deliver_message(task, heartbeat_msg);
     }
   }
 }

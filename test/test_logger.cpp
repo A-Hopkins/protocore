@@ -36,8 +36,7 @@ protected:
     logPath = "test_logger.log";
     std::filesystem::remove(logPath);
     auto& lg = Logger::instance();
-    lg.set_level(LogLevel::DEBUG)
-        .add_sink(std::make_unique<FileSink>(logPath));
+    lg.set_level(LogLevel::DEBUG).add_sink(std::make_unique<FileSink>(logPath));
   }
 
   static void TearDownTestSuite()

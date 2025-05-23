@@ -122,3 +122,25 @@ TEST(BrokerTest, MessageRouting)
   EXPECT_EQ(state_task->received_messages.size(), 1);
   EXPECT_EQ(both_task->received_messages.size(), 2);
 }
+
+TEST(BrokerTest, DirectDeliveryToTarget)
+{
+  Broker::initialize();
+
+  auto sender   = MockTask::create("sender");
+  auto receiver = MockTask::create("receiver");
+
+  msg::StateMsg state;
+  msg::Msg      message(sender.get(), state);
+
+  // Deliver the message directly to the target task via broker
+  Broker::deliver_message(receiver, message);
+
+  // Manually process queue
+  receiver->process();
+
+  // Validate receiver got the message
+  ASSERT_EQ(receiver->received_messages.size(), 1);
+  EXPECT_EQ(receiver->received_messages[0].get_type(), msg::Type::StateMsg);
+  EXPECT_EQ(receiver->received_messages[0].get_sender(), sender.get());
+}

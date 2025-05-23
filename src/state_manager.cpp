@@ -4,6 +4,7 @@
  *
  */
 #include "state_manager.h"
+#include "broker.h"
 #include "heart_beat.h"
 #include "msg/msg.h"
 #include <iostream>
@@ -188,7 +189,7 @@ void StateManager::mark_task_as_unresponsive(std::shared_ptr<task::Task> task)
   // Send state transition directly to the unresponsive task only
   msg::StateMsg state_msg{static_cast<uint8_t>(task::TaskState::ERROR)};
   msg::Msg      msg(this, state_msg);
-  task->deliver_message(msg);
+  Broker::deliver_message(task, msg);
 
   // Update our internal state tracking (optional if you want to maintain state consistency)
   std::lock_guard<std::mutex> lock(state_mutex);

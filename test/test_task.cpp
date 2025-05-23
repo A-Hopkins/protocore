@@ -101,7 +101,7 @@ TEST_F(TaskTestFixture, ProcessStateTransition)
   msg::Msg      message(task.get(), stateMsg);
 
   // Use the public deliver_message() method.
-  task->deliver_message(message);
+  Broker::deliver_message(task, message);
 
   // Allow time for the message to be processed.
   std::this_thread::sleep_for(std::chrono::milliseconds(20));
@@ -161,7 +161,7 @@ TEST_F(TaskTestFixture, ShutdownPreventsFurtherProcessing)
 
   // After shutdown, deliver a message.
   msg::StateMsg stateMsg{static_cast<uint8_t>(task::TaskState::RUNNING)};
-  task->deliver_message(msg::Msg(task.get(), stateMsg));
+  Broker::deliver_message(task, msg::Msg(task.get(), stateMsg));
 
   // Allow time for the message (if any) to be processed.
   std::this_thread::sleep_for(std::chrono::milliseconds(20));
@@ -179,9 +179,9 @@ TEST_F(TaskTestFixture, MultipleMessageProcessing)
   msg::StateMsg idleMsg{static_cast<uint8_t>(task::TaskState::IDLE)};
   msg::StateMsg runningMsg{static_cast<uint8_t>(task::TaskState::RUNNING)};
 
-  task->deliver_message(msg::Msg(task.get(), idleMsg));
-  task->deliver_message(msg::Msg(task.get(), runningMsg));
-  task->deliver_message(msg::Msg(task.get(), idleMsg));
+  Broker::deliver_message(task, msg::Msg(task.get(), idleMsg));
+  Broker::deliver_message(task, msg::Msg(task.get(), runningMsg));
+  Broker::deliver_message(task, msg::Msg(task.get(), idleMsg));
 
   // Allow time for processing.
   std::this_thread::sleep_for(std::chrono::milliseconds(30));

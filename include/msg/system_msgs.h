@@ -8,6 +8,7 @@
 #pragma once
 #include "declare_msg.h"
 #include <cstdint>
+#include <string>
 
 namespace msg
 {
@@ -21,6 +22,11 @@ namespace msg
   DECLARE_MESSAGE_TYPE(StateMsg)
   {
     uint8_t state; ///< The new state that is being requested.
+
+    std::string to_string() const
+    {
+      return " State = " + std::to_string(state);
+    }
   };
 
   /**
@@ -32,7 +38,11 @@ namespace msg
    */
   DECLARE_MESSAGE_TYPE(StateAckMsg)
   {
-    uint8_t state; ///< The new state that is being acknowledged.
+    uint8_t     state; ///< The new state that is being acknowledged.
+    std::string to_string() const
+    {
+      return " State = " + std::to_string(state);
+    }
   };
 
   /**
@@ -46,6 +56,12 @@ namespace msg
   {
     uint32_t unique_id; ///< A unique identifier for the heartbeat message.
     uint64_t timestamp; ///< The timestamp of the heartbeat message.
+
+    std::string to_string() const
+    {
+      return " Unique_id = " + std::to_string(unique_id) +
+             " timestamp = " + std::to_string(timestamp);
+    }
   };
 
   /**
@@ -61,6 +77,12 @@ namespace msg
     uint32_t orig_unique_id; ///< The unique identifier of the original heartbeat message.
     uint64_t orig_timestamp; ///< The timestamp of the original heartbeat message.
     uint64_t ack_timestamp;  ///< The timestamp of the acknowledgment message.
-    // TODO: Identify need for any other fields
+
+    std::string to_string() const
+    {
+      return " orig Unique_id = " + std::to_string(orig_unique_id) +
+             " orig timestamp = " + std::to_string(orig_timestamp) +
+             " ack timestamp = " + std::to_string(ack_timestamp);
+    }
   };
 } // namespace msg

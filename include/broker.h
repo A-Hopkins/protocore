@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include "logger.h"
 #include "msg/msg.h"
 #include "task.h"
 #include <algorithm>
@@ -72,7 +73,7 @@ public:
     {
       if (auto subscriber = it->lock())
       {
-        subscriber->deliver_message(msg);
+        task::Task::MessageQueueAccessor::get(*subscriber).enqueue(msg);
         ++it;
       }
       else
@@ -108,6 +109,22 @@ public:
     {
       subscribers.push_back(task);
     }
+  }
+
+  /**
+   * @brief Delivers a message to the target task
+   *
+   * This method is used by the Broker to enqueue messages into the task's private message queue.
+   *
+   * @param target The target task to deliver the message to.
+   * @param msg The message to deliver.
+   */
+  static inline void deliver_message(const std::shared_ptr<task::Task>& target, const msg::Msg& msg)
+  {
+    Logger::instance().log(LogLevel::MSG_TRAFFIC,
+                           msg.get_sender() ? msg.get_sender()->get_name() : "UnknownSender",
+                           msg.to_string());
+    task::Task::MessageQueueAccessor::get(*target).enqueue(msg);
   }
 
 private:

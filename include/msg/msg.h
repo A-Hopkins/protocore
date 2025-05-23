@@ -6,6 +6,7 @@
  * message that has variant data in it.
  */
 #pragma once
+#include "msg_traits.h"
 #include <cassert>
 
 #ifdef USE_CUSTOM_MSG_VARIANT
@@ -95,6 +96,25 @@ namespace msg
      * @return true if this message has a lower priority than the other
      */
     bool operator<(const Msg& other) const { return msg_priority < other.msg_priority; }
+
+    /**
+     * @brief Converts the message to a string for logging
+     * @return The message formatted as a string
+     */
+    std::string to_string() const
+    {
+      return std::visit(
+          [](const auto& actual_msg) -> std::string
+          {
+            using T = std::decay_t<decltype(actual_msg)>;
+
+            static_assert(msg::has_to_string_v<T>, "All message types used in MessageVariant must "
+                                                   "implement std::string to_string() const");
+
+            return actual_msg.to_string();
+          },
+          msg_data);
+    }
 
   private:
     task::Task*    sending_task; ///< The task that sent the message
