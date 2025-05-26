@@ -108,8 +108,7 @@ namespace msg
           {
             using T = std::decay_t<decltype(actual_msg)>;
 
-            static_assert(msg::has_str<T>, "All message types used in MessageVariant must "
-                                                   "implement std::string str() const");
+            static_assert(msg::has_str_v<T>, "All message types used in MessageVariant must implement std::string str() const");
 
             return actual_msg.str();
           },

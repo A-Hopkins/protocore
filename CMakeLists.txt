@@ -3,7 +3,7 @@ project(protocore VERSION 0.1.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
-set(BUILD_TESTING true)
+option(BUILD_TESTING "Build and run unit tests" ON)
 
 set(SOURCES
     src/message_queue.cpp
