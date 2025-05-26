@@ -23,7 +23,7 @@ namespace msg
   {
     uint8_t state; ///< The new state that is being requested.
 
-    std::string to_string() const
+    std::string str() const
     {
       return " State = " + std::to_string(state);
     }
@@ -39,7 +39,7 @@ namespace msg
   DECLARE_MESSAGE_TYPE(StateAckMsg)
   {
     uint8_t     state; ///< The new state that is being acknowledged.
-    std::string to_string() const
+    std::string str() const
     {
       return " State = " + std::to_string(state);
     }
@@ -57,7 +57,7 @@ namespace msg
     uint32_t unique_id; ///< A unique identifier for the heartbeat message.
     uint64_t timestamp; ///< The timestamp of the heartbeat message.
 
-    std::string to_string() const
+    std::string str() const
     {
       return " Unique_id = " + std::to_string(unique_id) +
              " timestamp = " + std::to_string(timestamp);
@@ -78,7 +78,7 @@ namespace msg
     uint64_t orig_timestamp; ///< The timestamp of the original heartbeat message.
     uint64_t ack_timestamp;  ///< The timestamp of the acknowledgment message.
 
-    std::string to_string() const
+    std::string str() const
     {
       return " orig Unique_id = " + std::to_string(orig_unique_id) +
              " orig timestamp = " + std::to_string(orig_timestamp) +

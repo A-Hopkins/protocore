@@ -123,7 +123,7 @@ public:
   {
     Logger::instance().log(LogLevel::MSG_TRAFFIC,
                            msg.get_sender() ? msg.get_sender()->get_name() : "UnknownSender",
-                           msg.to_string());
+                           msg.str());
     task::Task::MessageQueueAccessor::get(*target).enqueue(msg);
   }
 

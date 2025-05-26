@@ -101,17 +101,17 @@ namespace msg
      * @brief Converts the message to a string for logging
      * @return The message formatted as a string
      */
-    std::string to_string() const
+    std::string str() const
     {
       return std::visit(
           [](const auto& actual_msg) -> std::string
           {
             using T = std::decay_t<decltype(actual_msg)>;
 
-            static_assert(msg::has_to_string_v<T>, "All message types used in MessageVariant must "
-                                                   "implement std::string to_string() const");
+            static_assert(msg::has_str<T>, "All message types used in MessageVariant must "
+                                                   "implement std::string str() const");
 
-            return actual_msg.to_string();
+            return actual_msg.str();
           },
           msg_data);
     }

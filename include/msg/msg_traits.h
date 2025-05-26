@@ -6,13 +6,13 @@ namespace msg
 {
 
 template <typename T, typename = void>
-struct has_to_string : std::false_type {};
+struct has_str : std::false_type {};
 
 template <typename T>
-struct has_to_string<T, std::void_t<decltype(std::declval<const T>().to_string())>>
-  : std::is_same<decltype(std::declval<const T>().to_string()), std::string> {};
+struct has_str<T, std::void_t<decltype(std::declval<const T>().str())>>
+  : std::is_same<decltype(std::declval<const T>().str()), std::string> {};
 
 template <typename T>
-constexpr bool has_to_string_v = has_to_string<T>::value;
+constexpr bool has_str_v = has_str<T>::value;
 
 } // namespace msg
