@@ -1,6 +1,6 @@
 #include "broker.h"
 #include "msg/system_msgs.h" // include system messages for state messages
-#include "task.h"
+#include "task/task.h"
 #include <atomic>
 #include <chrono>
 #include <gtest/gtest.h>

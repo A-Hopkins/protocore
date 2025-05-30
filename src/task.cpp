@@ -7,7 +7,7 @@
  * std::enable_shared_from_this) and includes safe subscribe/publish functions with additional
  * runtime checks.
  */
-#include "task.h"
+#include "task/task.h"
 #include "broker.h"
 #include <cassert>
 #include <chrono>

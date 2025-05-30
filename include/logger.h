@@ -22,11 +22,11 @@
  */
 enum class LogLevel
 {
-  DEBUG,       ///< Detailed diagnostic information
-  INFO,        ///< Routine information
-  WARN,        ///< Indication of potential issues
-  ERROR,       ///< Errors that require attention
-  MSG_TRAFFIC  ///< Message traffic (broker publish)
+  DEBUG,      ///< Detailed diagnostic information
+  INFO,       ///< Routine information
+  WARN,       ///< Indication of potential issues
+  ERROR,      ///< Errors that require attention
+  MSG_TRAFFIC ///< Message traffic (broker publish)
 };
 
 /**

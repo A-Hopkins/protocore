@@ -1,6 +1,6 @@
 #include "broker.h"
 #include "msg/msg.h"
-#include "task.h"
+#include "task/task.h"
 #include <gtest/gtest.h>
 
 // Mock task class for testing

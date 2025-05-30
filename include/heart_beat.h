@@ -8,7 +8,7 @@
  */
 #pragma once
 
-#include "task.h"
+#include "task/task.h"
 #include <map>
 
 class StateManager; ///< Forward declaration of StateManager class.

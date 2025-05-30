@@ -6,6 +6,7 @@
  * throughout the system, such as state transitions and heartbeats.
  */
 #pragma once
+#include "../task/task_state.h"
 #include "declare_msg.h"
 #include <cstdint>
 #include <string>
@@ -25,7 +26,8 @@ namespace msg
 
     std::string str() const
     {
-      return " State = " + std::to_string(state);
+      return "StateMsg { State = " +
+             task::task_state_to_string(static_cast<task::TaskState>(state)) + " }";
     }
   };
 
@@ -41,7 +43,8 @@ namespace msg
     uint8_t     state; ///< The new state that is being acknowledged.
     std::string str() const
     {
-      return " State = " + std::to_string(state);
+      return "StateAckMsg { State = " +
+             task::task_state_to_string(static_cast<task::TaskState>(state)) + " }";
     }
   };
 
@@ -59,8 +62,8 @@ namespace msg
 
     std::string str() const
     {
-      return " Unique_id = " + std::to_string(unique_id) +
-             " timestamp = " + std::to_string(timestamp);
+      return "HeartBeatMsg { Unique_id = " + std::to_string(unique_id) +
+             " timestamp = " + std::to_string(timestamp) + " }";
     }
   };
 
@@ -80,9 +83,9 @@ namespace msg
 
     std::string str() const
     {
-      return " orig Unique_id = " + std::to_string(orig_unique_id) +
+      return "HeartbeatAckMsg { orig Unique_id = " + std::to_string(orig_unique_id) +
              " orig timestamp = " + std::to_string(orig_timestamp) +
-             " ack timestamp = " + std::to_string(ack_timestamp);
+             " ack timestamp = " + std::to_string(ack_timestamp) + " }";
     }
   };
 } // namespace msg
