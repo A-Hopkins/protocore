@@ -73,7 +73,7 @@ public:
     {
       if (auto subscriber = it->lock())
       {
-        task::Task::MessageQueueAccessor::get(*subscriber).enqueue(msg);
+        deliver_message(subscriber, msg);
         ++it;
       }
       else
