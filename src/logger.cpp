@@ -277,15 +277,12 @@ void Logger::worker_loop()
         break;
     }
 
-    char buffer[512];
-    int  len = std::snprintf(buffer, sizeof(buffer), "%llu [%s] %s - %s",
-                             static_cast<unsigned long long>(entry.timestampMs),
-                             entry.component.c_str(), level_str, entry.message.c_str());
-
-    if (len < 0)
-      len = 0;
-
-    std::string formatted(buffer, static_cast<size_t>(len));
+    std::ostringstream oss;
+    oss << entry.timestampMs;
+    oss << " [" << entry.component << "] ";
+    oss << level_str << " - ";
+    oss << entry.message;
+    std::string formatted = oss.str();
 
     // Dispatch to all sinks
     for (auto& sink : sinks)
