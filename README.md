@@ -1,6 +1,6 @@
 # ProtoCore
 
-ProtoCore represents the starting point of advanced software design—a modular and efficient framework at the core of robotics and task management. Built with modern C++, ProtoCore leverages the language’s performance and flexibility to enable precise state management, robust message-based communication, and modular task coordination. "Proto" symbolizes both the foundation of core functionality and the promise of new possibilities, ever-expanding to meet the demands of innovation.
+ProtoCore represents the starting point of advanced software design—a modular and efficient framework at the core of robotics and task management. Built with modern C++, ProtoCore leverages the language's performance and flexibility to enable precise state management, robust message-based communication, and modular task coordination. "Proto" symbolizes both the foundation of core functionality and the promise of new possibilities, ever-expanding to meet the demands of innovation.
 
 ---
 
